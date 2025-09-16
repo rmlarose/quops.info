@@ -61,7 +61,7 @@ def show_main_app():
     st.session_state['df'] = df
 
     # === Page Title ===
-    st.title("Count.QuOps")
+    st.title("QuOps.Info")
 
     # === Tabs ===
     tab1, tab2 = st.tabs(["📊 Visualization", "📋 Computer Overview"])
@@ -96,22 +96,22 @@ def show_main_app():
 
             # Y-axis selection
             y_options = [
-                'Number of two-qubit gates',
-                'Number of single-qubit gates',
-                'Total number of gates',
+                'Number of two-qubit operations',
+                'Number of single-qubit operations',
+                'Total number of operations',
                 'Circuit depth'
             ]
             y_axis = st.selectbox("Select Y-axis", y_options)
 
             # B-axis selection
             b_options = [
-                'Number of two-qubit gates',
-                'Number of single-qubit gates',
-                'Total number of gates',
+                'Number of two-qubit operations',
+                'Number of single-qubit operations',
+                'Total number of operations',
                 'Circuit depth',
-                'Date'
+                'Date (more recent = larger)'
             ]
-            b_axis = st.selectbox("Select column for the size of pointers", b_options)
+            b_axis = st.selectbox("Marker size", b_options)
 
             if b_axis == 'Date':
                 date_min = df['Date'].min()
