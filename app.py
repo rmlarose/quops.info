@@ -923,15 +923,14 @@ def show_login_form():
                 </p>
 
                 <p>
-                    On the visualization page <button class="goto" style="margin-left: 6px;">Visualization</button>:<br>
+                    On the <button class="goto" style="margin-left: 6px;">visualization page</button>:<br>
                     1. <strong>Hover</strong> over a point to see its data.<br>
                     2. <strong>Single-click</strong> a point to update its data.<br>
                     3. <strong>Double-click</strong> a point to open its reference.
                 </p>
 
                 <p>
-                    You can also submit new datapoints 
-                    <button class="gotos" style="margin-left: 6px;">Submit new datapoint</button>.
+                    You can also <button class="gotos" style="margin-left: 6px;">submit new datapoints.</button>.
                 </p>
 
                 <p>
