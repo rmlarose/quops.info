@@ -1003,10 +1003,12 @@ def show_login_form():
                 'Number of single-qubit gates',
                 'Total number of gates',
                 'Circuit depth',
+                'Equal size'
                 
             ]
             
             b_axis = st.selectbox("Marker size", b_options)
+         
             if b_axis == 'Date (more recent = larger)':
                 b_axis = 'Date'
 
@@ -1055,8 +1057,25 @@ def show_login_form():
                 # )
             ]
 
-        
-        filtered_df = filtered_df.dropna(subset=[b_axis])
+        if b_axis!= 'Equal size':
+            filtered_df = filtered_df.dropna(subset=[b_axis])
+            graph_df = filtered_df.copy()
+            bubble_index = graph_df.columns.get_loc(b_axis)
+            min_value = graph_df.iloc[:, bubble_index].min()
+            max_value = graph_df.iloc[:, bubble_index].max()
+            min_value = 0 if pd.isna(min_value) else min_value
+            max_value = 0 if pd.isna(max_value) else max_value
+
+            bubble_index = int(bubble_index)
+            min_value = float(min_value) if min_value is not None else 0
+            max_value = float(max_value) if max_value is not None else 0
+            b_size = [50,120]
+        else:
+            graph_df = filtered_df.copy()
+            bubble_index = graph_df.columns.get_loc('Date')
+            min_value = 50
+            max_value = 50
+            b_size = [50,50]
 
         
 
@@ -1068,7 +1087,7 @@ def show_login_form():
         with col2:
         
 
-            graph_df = filtered_df.copy()
+            
             
             # if x_axis_scale == 'Log':
             #     graph_df['Number of qubits'] = np.log(graph_df['Number of qubits'].replace(0, np.nan).dropna())
@@ -1076,14 +1095,8 @@ def show_login_form():
             #     graph_df[y_axis] = np.log(graph_df[y_axis].replace(0, np.nan).dropna())
 
             graph_df["Date"] = graph_df["Date"].astype(str)
-            graph_df_numeric = graph_df.select_dtypes(include='number')
-            graph_df[graph_df_numeric.columns] = graph_df_numeric.fillna(0)
-
-            graph_df_category = graph_df.select_dtypes(exclude='number')
-            graph_df[graph_df_category.columns] = graph_df_category.fillna('')
-
+            graph_df = graph_df.fillna('')
             
-
             x_index = graph_df.columns.get_loc("Number of qubits")
             y_index = graph_df.columns.get_loc(y_axis)
 
@@ -1092,18 +1105,6 @@ def show_login_form():
             computers = list(graph_df["Comp_Inst"].unique())
 
             comp_index = graph_df.columns.get_loc("Comp_Inst")
-
-            bubble_index = graph_df.columns.get_loc(b_axis)
-            min_value = graph_df.iloc[:, bubble_index].min()
-            max_value = graph_df.iloc[:, bubble_index].max()
-
-            min_value = 0 if pd.isna(min_value) else min_value
-            max_value = 0 if pd.isna(max_value) else max_value
-
-
-            bubble_index = int(bubble_index)
-            min_value = float(min_value) if min_value is not None else 0
-            max_value = float(max_value) if max_value is not None else 0
 
 
             option = {
@@ -1151,7 +1152,7 @@ def show_login_form():
                     "min": min_value,
                     "max": max_value,
                     "seriesIndex": list(range(len(computers))),
-                    "inRange": {"symbolSize": [50, 120]}
+                    "inRange": {"symbolSize": b_size}
                 },
                 "series": [
                     {
@@ -1277,6 +1278,7 @@ def show_login_form():
 
     
     with tab3:
+        institutions = list(df["Institution"].unique())
 
         #st.header("Submit Quantum Datapoint")
 
@@ -1332,90 +1334,144 @@ def show_login_form():
                 }
             </style>
         """, unsafe_allow_html=True)
-            with st.form("quantum_form") :
-                st.markdown("Highlighted = required field")
+            
+            st.markdown("Highlighted = required field")
 
-                st.markdown('<div class="green-label">Reference</div>', unsafe_allow_html=True)
-                reference = st.text_input(label='', key="reference_input", help = "The reference for the quantum computation, typically an arXiv or journal link")
+            st.markdown('<div class="green-label">Reference</div>', unsafe_allow_html=True)
+            reference = st.text_input(label='', key="reference_input", help = "The reference for the quantum computation, typically an arXiv or journal link")
 
-                st.markdown('<div class="black-label">Experiment Date</div>', unsafe_allow_html=True)
-                date = st.date_input("", value=datetime.today(), help="The date the experiment was performed or published (typically the date of the reference)")
+            st.markdown('<div class="black-label">Experiment Date</div>', unsafe_allow_html=True)
+            date = st.date_input("", value=datetime.today(), help="The date the experiment was performed or published (typically the date of the reference)")
+            
+            st.markdown('<div class="black-label">Computation (comma-separated list)</div>', unsafe_allow_html=True)
+            computation_raw = st.text_area("", help="The algorithm used/computation performed, for example Trotter, VQE, Phase estimation")
+
+            # st.markdown('<div class="black-label">Error Mitigation (comma-separated list)</div>', unsafe_allow_html=True)
+            # error_mitigation_raw = st.text_area("", help="e.g. ZNE, Clifford Data Regression")
+
+            st.markdown('<div class="green-label">Number of Qubits</div>', unsafe_allow_html=True)
+            num_qubits_raw = st.text_input("", help = "Number of qubits used in the quantum computation")
+            num_qubits = int(num_qubits_raw) if num_qubits_raw.strip().isdigit() else None
+
+            st.markdown('<div class="black-label">Number of Two-Qubit Operations</div>', unsafe_allow_html=True)
+            num_2q_gates_raw = st.text_input("", help = "Number of two-qubit operations used in the quantum computation")
+            num_2q_gates = int(num_2q_gates_raw) if num_2q_gates_raw.strip().isdigit() else None
+
+            st.markdown('<div class="black-label">Number of Single-Qubit Operations</div>', unsafe_allow_html=True)
+            num_1q_gates_raw = st.text_input("", help = "Number of siingle-qubit operations used in the quantum computation")
+            num_1q_gates = int(num_1q_gates_raw) if num_1q_gates_raw.strip().isdigit() else None
+
+            st.markdown('<div class="black-label">Total Number of Operations</div>', unsafe_allow_html=True)
+            total_gates_raw = st.text_input("",help = "Total number of operations used in the quantum computation, e.g. single-qubit operations + two-qubit operations")
+            total_gates = int(total_gates_raw) if total_gates_raw.strip().isdigit() else None
+
+            st.markdown('<div class="black-label">Circuit Depth</div>', unsafe_allow_html=True)
+            circuit_depth_raw = st.text_input("", help = "The depth of the circuit in the quantum computation (see Circuit Depth Measure).")
+            circuit_depth = int(circuit_depth_raw) if circuit_depth_raw.strip().isdigit() else None
+
+            st.markdown('<div class="black-label">Circuit Depth Measure</div>', unsafe_allow_html=True)
+            cdm_options = list(df["Circuit depth measure"].unique())
+            try:  
+                selected_cdm = st.selectbox(
+                    "",
+                    options=cdm_options + ["Other"],
+                    index=0,
+                    help="The measure/metric used for circuit depth, for example two-qubit gate layers, Trotter step, etc. Number of two-qubit operations and/or total number of operations is preferred to this metric, and this should be used only when these are unknown."
+                )
+                if selected_cdm == "Other":
+                    raise TypeError("Type Manually")
+                else:
+                    circuit_depth_measure = selected_cdm
+            except: 
+                circuit_depth_measure = st.text_input(
+                    "Enter Circuit depth measure manually:",
+                    help="The measure/metric used for circuit depth, for example two-qubit gate layers, Trotter step, etc. Number of two-qubit operations and/or total number of operations is preferred to this metric, and this should be used only when these are unknown."
+                )
+
+            st.markdown('<div class="green-label">Institution</div>', unsafe_allow_html=True)
+            #institution = st.text_input("", help="Who owns the quantum computer, e.g. Google, Quantinuum, QuEra")
+
+            try:  
+                selected = st.selectbox(
+                    "",
+                    options=institutions + ["Other"],
+                    index=0,
+                    help="Who owns the quantum computer, e.g. Google, Quantinuum, QuEra"
+                )
+                if selected == "Other":
+                    raise TypeError("Type Manually")
+                else:
+                    institution = selected
+            except: 
+                institution = st.text_input(
+                    "Enter Institution manually:",
+                    help="Who owns the quantum computer, e.g. Google, Quantinuum, QuEra"
+                )
+
+            
+            
+            st.markdown('<div class="green-label">Computer</div>', unsafe_allow_html=True)
+            if selected != "Other":
+                computers = list(df[df["Institution"]== institution]["Computer"].unique())
+                selected_comp = st.selectbox("",options = computers+["Other"],index=0,help ="The name or other identifying label for the quantum computer")
+                try:
+                    if selected_comp == "Other":
+                        raise TypeError("Type Manually")
+                    else:
+                        computer = selected_comp
+                except:
+                    computer = st.text_input(
+                    "Enter Computer manually:",
+                    help="The name or other identifying label for the quantum computer"
+                )
+            else:
                 
-                st.markdown('<div class="black-label">Computation (comma-separated list)</div>', unsafe_allow_html=True)
-                computation_raw = st.text_area("", help="The algorithm used/computation performed, for example Trotter, VQE, Phase estimation")
+                computer = st.text_input(
+                    "Enter Computer manually:",
+                    help="The name or other identifying label for the quantum computer"
+                )
 
-                # st.markdown('<div class="black-label">Error Mitigation (comma-separated list)</div>', unsafe_allow_html=True)
-                # error_mitigation_raw = st.text_area("", help="e.g. ZNE, Clifford Data Regression")
-
-                st.markdown('<div class="green-label">Number of Qubits</div>', unsafe_allow_html=True)
-                num_qubits_raw = st.text_input("", help = "Number of qubits used in the quantum computation")
-                num_qubits = int(num_qubits_raw) if num_qubits_raw.strip().isdigit() else None
-
-                st.markdown('<div class="black-label">Number of Two-Qubit Operations</div>', unsafe_allow_html=True)
-                num_2q_gates_raw = st.text_input("", help = "Number of two-qubit operations used in the quantum computation")
-                num_2q_gates = int(num_2q_gates_raw) if num_2q_gates_raw.strip().isdigit() else None
-
-                st.markdown('<div class="black-label">Number of Single-Qubit Operations</div>', unsafe_allow_html=True)
-                num_1q_gates_raw = st.text_input("", help = "Number of siingle-qubit operations used in the quantum computation")
-                num_1q_gates = int(num_1q_gates_raw) if num_1q_gates_raw.strip().isdigit() else None
-
-                st.markdown('<div class="black-label">Total Number of Operations</div>', unsafe_allow_html=True)
-                total_gates_raw = st.text_input("",help = "Total number of operations used in the quantum computation, e.g. single-qubit operations + two-qubit operations")
-                total_gates = int(total_gates_raw) if total_gates_raw.strip().isdigit() else None
-
-                st.markdown('<div class="black-label">Circuit Depth</div>', unsafe_allow_html=True)
-                circuit_depth_raw = st.text_input("", help = "The depth of the circuit in the quantum computation (see Circuit Depth Measure).")
-                circuit_depth = int(circuit_depth_raw) if circuit_depth_raw.strip().isdigit() else None
-
-                st.markdown('<div class="black-label">Circuit Depth Measure</div>', unsafe_allow_html=True)
-                circuit_depth_measure = st.text_input("", help="The measure/metric used for circuit depth, for example two-qubit gate layers, Trotter step, etc. Number of two-qubit operations and/or total number of operations is preferred to this metric, and this should be used only when these are unknown. ")
-
-                st.markdown('<div class="green-label">Institution</div>', unsafe_allow_html=True)
-                institution = st.text_input("", help="Who owns the quantum computer, e.g. Google, Quantinuum, QuEra")
+            
+            submit = st.button("Submit")
+        
+            if st.session_state.get("submission_success"):
+                st.success("Quantum datapoint submitted successfully!")
+                del st.session_state["submission_success"]
+            
+            error_count_new = 0
+            if submit:
+                if not reference:
+                    error_count_new+=1
+                    st.error("Please fill out Reference(url or citation) as it is a required field. ")
+                if not num_qubits:
+                    error_count_new+=1
+                    st.error("Please fill out Number of Qubits as it is a required field. ")
+                if not institution:
+                    error_count_new+=1
+                    st.error("Please fill out Institution as it is a required field. ")
+                if not computer:
+                    error_count_new+=1
+                    st.error("Please fill out Computer as it is a required field. ")
+                if not (num_2q_gates or total_gates):
+                    error_count_new+=1
+                    st.error("Please fill either Number of two-Qubit operations or Total Number of Operations")
                 
-                st.markdown('<div class="green-label">Computer</div>', unsafe_allow_html=True)
-                computer = st.text_input("", help="The name or other identifying label for the quantum computer")
-
-                submit = st.form_submit_button("Submit")
-          
-                if st.session_state.get("submission_success"):
-                    st.success("Quantum datapoint submitted successfully!")
-                    del st.session_state["submission_success"]
+                #if reference and num_qubits and (num_2q_gates or total_gates):
+                if error_count_new==0:
+                    computation_list = [x.strip() for x in computation_raw.split(",") if x.strip()]
+                    #error_mitigation_list = [x.strip() for x in error_mitigation_raw.split(",") if x.strip()]
+                    success = insert_quantum_datapoint(
+                        reference, date, computation_list, num_qubits, num_2q_gates, num_1q_gates, total_gates,
+                        circuit_depth, circuit_depth_measure, institution, computer
+                    )
                 
-                error_count_new = 0
-                if submit:
-                    if not reference:
-                        error_count_new+=1
-                        st.error("Please fill out Reference(url or citation) as it is a required field. ")
-                    if not num_qubits:
-                        error_count_new+=1
-                        st.error("Please fill out Number of Qubits as it is a required field. ")
-                    if not institution:
-                        error_count_new+=1
-                        st.error("Please fill out Institution as it is a required field. ")
-                    if not computer:
-                        error_count_new+=1
-                        st.error("Please fill out Computer as it is a required field. ")
-                    if not (num_2q_gates or total_gates):
-                        error_count_new+=1
-                        st.error("Please fill either Number of two-Qubit operations or Total Number of Operations")
-                    
-                    #if reference and num_qubits and (num_2q_gates or total_gates):
-                    if error_count_new==0:
-                        computation_list = [x.strip() for x in computation_raw.split(",") if x.strip()]
-                        #error_mitigation_list = [x.strip() for x in error_mitigation_raw.split(",") if x.strip()]
-                        success = insert_quantum_datapoint(
-                            reference, date, computation_list, num_qubits, num_2q_gates, num_1q_gates, total_gates,
-                            circuit_depth, circuit_depth_measure, institution, computer
-                        )
-                    
-                        if success:
-                            st.success("Quantum datapoint submitted successfully!")
-                            #st.session_state['controllo'] = False
-                            
-                            st.session_state.submission_success = True
-                            st.rerun()
-                    
+                    if success:
+                        st.success("Quantum datapoint submitted successfully!")
+                        #st.session_state['controllo'] = False
+                        
+                        st.session_state.submission_success = True
+                        st.rerun()
+                
 
 
     
