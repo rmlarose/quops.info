@@ -930,7 +930,7 @@ def show_login_form():
                 </p>
 
                 <p>
-                    You can also <button class="gotos" style="margin-left: 6px;">submit new datapoints.</button>.
+                    You can also <button class="gotos" style="margin-left: 6px;">submit new datapoints</button>.
                 </p>
 
                 <p>
