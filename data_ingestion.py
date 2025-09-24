@@ -12,7 +12,7 @@ load_dotenv()
 
 # Setting up Database connection
 conn = psycopg2.connect(
-    host="localhost",
+    host=os.getenv("HOST"),
     database=os.getenv("DB_NAME"),
     user=os.getenv("DB_USER"),
     password=os.getenv("DB_PASSWORD"),
@@ -176,7 +176,7 @@ def load_data_from_db(conn: PGConnection)->pd.DataFrame:
 
 def load_comp_data_from_db()->pd.DataFrame:
     conn = psycopg2.connect(
-                host="localhost",
+                host=os.getenv("HOST"),
                 database=os.getenv("DB_NAME"),
                 user=os.getenv("DB_USER"),
                 password=os.getenv("DB_PASSWORD"),
@@ -254,7 +254,7 @@ def load_transform_data(data_source : str)->pd.DataFrame:
         return df
     else:
         conn = psycopg2.connect(
-        host="localhost",
+        host=os.getenv("HOST"),
         database=os.getenv("DB_NAME"),
         user=os.getenv("DB_USER"),
         password=os.getenv("DB_PASSWORD"),

@@ -50,7 +50,7 @@ def is_nan_or_nan_string(val):
 # --- PostgreSQL connection ---
 def get_connection():
     return psycopg2.connect(
-        host="localhost",
+        host=os.getenv("HOST"),
         database=os.getenv("DB_NAME"),
         user=os.getenv("DB_USER"),
         password=os.getenv("DB_PASSWORD"),
