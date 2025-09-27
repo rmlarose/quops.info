@@ -3,7 +3,9 @@ __pycache__/
 *.py[cod]
 *$py.class
 queries.txt
-streamlit-key.pem
+*.pem
+.DS_Store
+**/.DS_Store
 
 # C extensions
 *.so
