@@ -1,3 +1,5 @@
+"""Tools for interacting with the database on MongoDB."""
+
 import pandas as pd
 import streamlit as st
 from pymongo import MongoClient
