@@ -19,10 +19,6 @@ pio.templates.default = "plotly"
 from pyecharts.commons.utils import JsCode
 
 
-import psycopg2
-import psycopg2.extras
-from psycopg2.extras import RealDictCursor
-
 from captcha.image import ImageCaptcha
 
 from urllib.parse import urlparse
@@ -50,16 +46,6 @@ def is_nan_or_nan_string(val):
     if isinstance(val, str) and val.strip().lower() == 'nan':
         return True
     return False
-
-# --- PostgreSQL connection ---
-def get_connection():
-    return psycopg2.connect(
-        host=os.getenv("HOST"),
-        database=os.getenv("DB_NAME"),
-        user=os.getenv("DB_USER"),
-        password=os.getenv("DB_PASSWORD"),
-        port="5432"
-    )
 
 
 def df_to_json_safe(df: pd.DataFrame):
