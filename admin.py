@@ -6,7 +6,7 @@ import streamlit as st
 from database import get_collection, get_dataframe
 
 
-def admin_interface():
+def show_admin_page():
     # --- Initialize page state ---
     if "admin_page" not in st.session_state:
         st.session_state.admin_page = "Data Table"
@@ -31,7 +31,7 @@ def admin_interface():
         st.dataframe(df_all)
         df_ids = df_all["_id"].unique()
         id_selected= st.selectbox("Select the id",df_ids)
-        operations = st.selectbox("Select the operation to be performed",['Delete','Update'])
+        operations = st.selectbox("Select the operation to be performed", ['Delete', 'Update'])
 
         # Initialize session state variables
         if "delete_requested" not in st.session_state:
@@ -59,6 +59,7 @@ def admin_interface():
 
             # Step 3: Actually delete the record
             if st.session_state.delete_confirmed:
+                print("Attempting to delete record with _id", id_selected)
                 collection = get_collection()
                 collection.find_one_and_delete({"_id": id_selected})  # TODO: Almost certain bug, need to update `id_selected` for MongoDB. Old code is below:
 
@@ -70,7 +71,7 @@ def admin_interface():
                 cur.close()
                 conn.close()
                 """
-                st.success("✅ Successfully deleted the record.")
+                st.success(f"✅ Successfully deleted the record with _id {id_selected}.")
 
                 if st.button("🔄 Click to refresh and see updates"):
                     st.session_state.delete_requested = False
@@ -184,12 +185,16 @@ def admin_interface():
 
                         if st.button("Click to refresh and see updates"):
                             st.rerun()
-                            
+
+    # Approve or reject pending submissions.
     if st.session_state.admin_page == "Data Table":
         st.header("📈 Submissions Graph Data")
         try:
             collection = get_collection()
-            data = list(collection.find({"status": "approved"}))
+            print("All database entries are")
+            print(list(collection.find({})))
+            data = list(collection.find({"status": "pending"}))  # TODO: Query the database directly like this instead of finding all first.
+            print("Pending submissions are:", data)
             df_data = pd.DataFrame(data)
 
             if not data:
@@ -201,26 +206,16 @@ def admin_interface():
                         col1, col2 = st.columns([8, 2])
 
                         with col1:
-                            # st.markdown(f"**ID:** `{row["_id"]}`")
-                            # st.markdown(f"**Reference:** {row['reference']}")
-                            # st.markdown(f"**Date:** {row['date']}")
-                            # st.markdown(f"**Computation:** {row['computation']}")
-                            # st.markdown(f"**Qubits:** {row['num_qubits']}")
-                            # st.markdown(f"**2-Qubit Gates:** {row['num_2q_gates']}")
-                            # st.markdown(f"**1-Qubit Gates:** {row['num_1q_gates']}")
-                            # st.markdown(f"**Total Gates:** {row['total_gates']}")
-                            # st.markdown(f"**Circuit Depth:** {row['circuit_depth']}")
-                            # st.markdown(f"**Depth (Measured):** {row['circuit_depth_measure']}")
-                            # st.markdown(f"**Institution:** {row['institution']}")
-                            # st.markdown(f"**Computer:** {row['computer']}")
-                            # st.markdown(f"**Error Mitigation:** {row['error_mitigation']}")
-                            # st.markdown(f"**Status:** `{row['status']}`")
-                            if row["status"]=="PENDING":
+                            if row["status"]=="pending":  # TODO: Don't hardcode!!!!!!!
                                 st.markdown("New Datapoint")
                                 st.table(row)
                             else:
                                 st.markdown("Update Datapoint")
-                                st.markdown(f"**Comments:** <span style='color:green'>{row['feedback']}</span>", unsafe_allow_html=True)
+                                if "feedback" in row.keys():
+                                    feedback = row["feedback"]
+                                else:
+                                    feedback = ""
+                                st.markdown(f"**Comments:** <span style='color:green'>{feedback}</span>", unsafe_allow_html=True)
                                 st.table(row)
                             
 
@@ -235,9 +230,6 @@ def admin_interface():
                                     )
                                 else:
                                     collection.find_one_and_delete({"_id": row["_id"]})
-                                    # cur.execute("DELETE from quant_data WHERE reference= %s and status= 'APPROVED'", (row['reference'],))
-                                    # conn.commit()
-                                    # cur.execute("UPDATE quant_data SET status = 'APPROVED' WHERE id = %s", (row["_id"],))
 
                                 st.success(f"Approved ID {row['_id']}")
                                 st.rerun()

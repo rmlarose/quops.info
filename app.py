@@ -1,7 +1,7 @@
 """The QuOps.Info website."""
+
 from datetime import datetime
 import math
-import os
 import random
 import string
 import time
@@ -20,9 +20,8 @@ from pyecharts.commons.utils import JsCode
 from captcha.image import ImageCaptcha
 from urllib.parse import urlparse
 
-from admin import admin_interface
+from admin import show_admin_page
 from database import get_dataframe, get_collection, get_admins
-
 
 
 # Initialize session state for Login
@@ -58,13 +57,15 @@ def df_to_json_safe(df: pd.DataFrame):
     
     return [df.columns.tolist()] + [[to_native(v) for v in row] for row in df.values.tolist()]
 
+
 def is_hyperlink(s):
     try:
         result = urlparse(s)
         return all([result.scheme in ("http", "https"), result.netloc])
     except ValueError:
         return False
-    
+
+
 # Check credentials for admin and user
 def check_credentials(username, password):
     try:
@@ -76,25 +77,17 @@ def check_credentials(username, password):
         return False
 
 
-            
-            
-def show_login_form():
+def show_app():
         # --- Page Setup ---
     st.title("🔬 Quantum Operations (QuOps) Info")
-
-
 
     if "clicked_id" not in st.session_state:
         st.session_state.clicked_id = None
     
-
-
     # --- Tabs for Login Options ---
     about_tab, visualization_tab, submit_tab, update_tab, admin_tab = st.tabs(
         ["About", "Visualization", "Submit New Datapoint", "Update a Datapoint", "Admin Login"]
     )
-
-    
 
     def switch(tab):
         return f"""
@@ -105,12 +98,6 @@ def show_login_form():
     # last_row = st.container()
     # if last_row.button("Update Datapoint"):
     #     html(f"<script>{switch(3)}</script>", height=0)
-
-    
-   
-
-    data_source = os.getenv('DATA_SOURCE')
-    print("data_source is", data_source)
 
     # define the costant
     length_captcha = 4
@@ -139,7 +126,7 @@ def show_login_form():
                 "Circuit depth measure": circuit_depth_measure,
                 "Institution": institution,
                 "Computer": computer,
-                "Status": status,
+                "status": status,
             })
             
             return True
@@ -147,6 +134,7 @@ def show_login_form():
             st.error(f"Unable to retrieve collection and/or submit datapoint. Error: {e}")
             return False
 
+    # The "About" tab.
     with about_tab:
         # Page title
 
@@ -199,16 +187,15 @@ def show_login_form():
                 </script>
             """, height=500)
 
+    # The main visualization tab with the plot.
     with visualization_tab:
-        
-        #st.header("Visual Analysis")
         df: pd.DataFrame = get_dataframe()
 
-            # Create two columns
-        col1, col2 = st.columns([1, 2])  # You can adjust the ratio as needed
+        # Create two columns
+        selection_column, plot_column = st.columns([1, 2])
 
         # Filter controls in the first column
-        with col1:
+        with selection_column:
             # Institution filter
             comp_options = list(df['Institution'].unique())
             selected_comps = st.multiselect("Institution", comp_options, default=comp_options)
@@ -218,7 +205,6 @@ def show_login_form():
             selected_computers = st.multiselect("Computer", filtered_computer_options, default=filtered_computer_options)
 
             # Year filter
-            fmt = "%m/%d/%Y"
             years = [d.year for d in df["Date"]]
             df["Year"] = years
             years_unique = sorted(set(years))
@@ -244,16 +230,10 @@ def show_login_form():
                 'Equal size'
                 
             ]
-            
             b_axis = st.selectbox("Marker size", b_options)
          
             if b_axis == 'Date (more recent = larger)':
-                b_axis = 'Date'
-
-            if b_axis == 'Date':
-                dates = [
-                    d for d in df.Date
-                ]
+                dates = [d for d in df.Date]
                 date_min = min(dates)
                 date_max = max(dates)
                 df["bubble_size"] = dates
@@ -270,22 +250,14 @@ def show_login_form():
             with col6:
                 y_axis_scale = st.selectbox("Vertical axis scale", ["Linear", "Log"], index=0)
         
-        if data_source == 'sheet':
         # Filter DataFrame
-            filtered_df = df[
-                (df['Institution'].isin(selected_comps)) &
-                (df['Computer'].isin(selected_computers)) &
-                (df['Year'].isin(selected_years)) 
-            ]
-        else:
-             # Filter DataFrame
-            filtered_df = df[
-                (df['Institution'].isin(selected_comps)) &
-                (df['Computer'].isin(selected_computers)) &
-                (df['Year'].isin(selected_years)) 
-            ]
+        filtered_df = df[
+            (df['Institution'].isin(selected_comps)) &
+            (df['Computer'].isin(selected_computers)) &
+            (df['Year'].isin(selected_years)) 
+        ]
 
-        if b_axis!= 'Equal size':
+        if b_axis != 'Equal size':
             filtered_df = filtered_df.dropna(subset=[b_axis])
             graph_df = filtered_df.copy()
             bubble_index = graph_df.columns.get_loc(b_axis)
@@ -306,7 +278,7 @@ def show_login_form():
             b_size = [50,50]
 
         # Assume filtered_df, y_axis, b_axis are already defined
-        with col2:
+        with plot_column:
             # if x_axis_scale == 'Log':
             #     graph_df['Number of qubits'] = np.log(graph_df['Number of qubits'].replace(0, np.nan).dropna())
             # if y_axis_scale == 'Log':
@@ -318,7 +290,6 @@ def show_login_form():
             
             x_index = graph_df.columns.get_loc("Number of qubits")
             y_index = graph_df.columns.get_loc(y_axis)
-
             
             graph_df["Comp_Inst"] = graph_df["Institution"] + " " + graph_df["Computer"]
             computers = list(graph_df["Comp_Inst"].unique())
@@ -397,10 +368,10 @@ def show_login_form():
 
             
 
-            if clicked_id is not None and isinstance(clicked_id,int):
+            if clicked_id is not None and isinstance(clicked_id, int):
                 st.session_state.clicked_id = clicked_id
 
-            if clicked_id is not None and isinstance(clicked_id,int):
+            if clicked_id is not None and isinstance(clicked_id, int):
                 # Inject CSS to make Streamlit button green
                 st.markdown(
                     """
@@ -434,7 +405,7 @@ def show_login_form():
                     height=0
                 )
     
-    """Submit a new datapoint."""
+    # The tab for submitting a new datapoint.
     with submit_tab:
         institutions = list(df["Institution"].unique())
 
@@ -448,16 +419,16 @@ def show_login_form():
         if st.session_state['controllo'] == False:
             st.markdown("Confirm humanity")
 
-            col1, col2 = st.columns([1, 1])
+            selection_column, plot_column = st.columns([1, 1])
 
             if 'Captcha' not in st.session_state:
                 st.session_state['Captcha'] = ''.join(random.choices(string.ascii_uppercase + string.digits, k=length_captcha))
 
             image = ImageCaptcha(width=width, height=height)
             data = image.generate(st.session_state['Captcha'])
-            col1.image(data)
+            selection_column.image(data)
 
-            captcha_input = col2.text_area('Enter captcha text', height=30)
+            captcha_input = plot_column.text_area('Enter captcha text', height=30)
 
             if st.button("Verify"):
                 if st.session_state['Captcha'].lower() == captcha_input.strip().lower():
@@ -636,10 +607,8 @@ def show_login_form():
                         
                         st.session_state.submission_success = True
                         st.rerun()
-                
 
-
-    
+    # The tab for updating a datapoint.
     with update_tab:
 
         
@@ -657,9 +626,6 @@ def show_login_form():
         if not record.empty:
         
             record = record.iloc[0]
-            print("Record is:", record)
-            print("type(record) =", type(record))
-            print(record.get("feedback"))
 
             new_ref = st.text_input("Reference",value = record["Reference"],help = "The reference for the quantum computation, typically an arXiv or journal link")
             new_date = st.date_input("Date", value=record['Date'])
@@ -786,8 +752,8 @@ def show_login_form():
 #     show_login_form()
 if st.session_state.logged_in == 'app':
     #show_user_app()
-    show_login_form()
+    show_app()
 elif st.session_state.logged_in == 'admin':
-    admin_interface()
+    show_admin_page()
 else:
-    show_login_form()
+    show_app()
