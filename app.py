@@ -116,7 +116,7 @@ def admin_interface():
     if st.session_state.admin_page == "Database":
         df_all = get_dataframe()
         st.dataframe(df_all)
-        df_ids = df_all["id"].unique()
+        df_ids = df_all["_id"].unique()
         id_selected= st.selectbox("Select the id",df_ids)
         operations = st.selectbox("Select the operation to be performed",['Delete','Update'])
 
@@ -190,7 +190,7 @@ def admin_interface():
                 'computer':	'Computer',	
                 })
             
-            record = df_all[df_all['id'] == id_selected]
+            record = df_all[df_all["_id"] == id_selected]
             if not record.empty:
             
                 record = record.iloc[0]
@@ -272,15 +272,11 @@ def admin_interface():
                                 }
                             }
                         )
-                        st.success(f"Update done for ID : {record['id']}")
+                        st.success(f"Update done for ID : {record['_id']}")
 
                         if st.button("Click to refresh and see updates"):
                             st.rerun()
                             
-
-
-        
-
 
 
     if st.session_state.admin_page == "Data Table":
@@ -299,7 +295,7 @@ def admin_interface():
                         col1, col2 = st.columns([8, 2])
 
                         with col1:
-                            # st.markdown(f"**ID:** `{row['id']}`")
+                            # st.markdown(f"**ID:** `{row["_id"]}`")
                             # st.markdown(f"**Reference:** {row['reference']}")
                             # st.markdown(f"**Date:** {row['date']}")
                             # st.markdown(f"**Computation:** {row['computation']}")
@@ -324,7 +320,7 @@ def admin_interface():
 
                         with col2:
                             c1, c2 = st.columns(2)
-                            if c1.button("✅ Approve", key=f"approve_{row['id']}"):
+                            if c1.button("✅ Approve", key=f"approve_{row['_id']}"):
                                 collection = get_collection()
 
                                 if row['status']=='pending':
@@ -335,7 +331,7 @@ def admin_interface():
                                     collection.find_one_and_delete({"_id": row["_id"]})
                                     # cur.execute("DELETE from quant_data WHERE reference= %s and status= 'APPROVED'", (row['reference'],))
                                     # conn.commit()
-                                    # cur.execute("UPDATE quant_data SET status = 'APPROVED' WHERE id = %s", (row['id'],))
+                                    # cur.execute("UPDATE quant_data SET status = 'APPROVED' WHERE id = %s", (row["_id"],))
 
                                 st.success(f"Approved ID {row['_id']}")
                                 st.rerun()
@@ -689,7 +685,7 @@ def show_login_form():
                     """,
                     unsafe_allow_html=True,
                 )
-                update_ref = graph_df.loc[graph_df["id"]==st.session_state.clicked_id,"Reference"].values[0]
+                update_ref = graph_df.loc[graph_df["_id"]==st.session_state.clicked_id,"Reference"].values[0]
 
                 if last_row.button(f"Update data for reference {update_ref}"):
                     ts = int(time.time() * 1000)
@@ -907,21 +903,24 @@ def show_login_form():
         
         if st.session_state.clicked_id is None:
             st.subheader("Please provide the necessary details…")
-            update_id = df.iloc[0]["id"]
+            update_id = df.iloc[0]["_id"]
         else:
             st.subheader("Please provide the necessary details…")
             update_id = st.session_state.clicked_id
             st.session_state.visited = 1
         
         
-        record = df[df['id'] == update_id]
+        record = df[df['_id'] == update_id]
 
         if not record.empty:
         
             record = record.iloc[0]
+            print("Record is:", record)
+            print("type(record) =", type(record))
+            print(record.get("feedback"))
 
             new_ref = st.text_input("Reference",value = record["Reference"],help = "The reference for the quantum computation, typically an arXiv or journal link")
-            new_date = st.date_input("Date", value=record['Date'])
+            new_date = st.date_input("Date", value=datetime.strptime(record['Date'], "%m/%d/%Y"))
             new_qubits = st.number_input("Number of Qubits", value=int(record['Number of qubits']), help = "Number of qubits used in the quantum computation")
 
             try:
@@ -952,10 +951,10 @@ def show_login_form():
                 
             new_circuit_depth_measure = st.text_input("Circuit depth measure", value=record['Circuit depth measure'], help="The measure/metric used for circuit depth, for example two-qubit gate layers, Trotter step, etc. Number of two-qubit operations and/or total number of operations is preferred to this metric, and this should be used only when these are unknown. ")
             new_institution = st.text_input("Institution", value=record['Institution'], help="Who owns the quantum computer, e.g. Google, Quantinuum, QuEra")
-            new_computation = st.text_input("Computation", value=record['Computations'], help="e.g. QFT, Measurement")
+            new_computation = st.text_input("Computation", value=record['Computation'], help="e.g. QFT, Measurement")
             new_computer = st.text_input("Computer", value=record['Computer'], help="The name or other identifying label for the quantum computer")
             #new_mitigation = st.text_input("Error Mitigations", value=record['Error mitigations'], help="e.g. ZNE, Clifford Data Regression")
-            new_feedback = st.text_input("Justification for changes", value=record['feedback'], help="Clear description of the changes made with justification. For example: “Changed the number of two-qubit operations from 512 to 1024. The correct number (1024 two-qubit operations) is stated in the caption of Figure 1 of the reference.")
+            new_feedback = st.text_input("Justification for changes", value=record.get('feedback'), help="Clear description of the changes made with justification. For example: “Changed the number of two-qubit operations from 512 to 1024. The correct number (1024 two-qubit operations) is stated in the caption of Figure 1 of the reference.")
 
             computation_list = [x.strip() for x in new_computation.split(",") if x.strip()]
             #error_mitigation_list = [x.strip() for x in new_mitigation.split(",") if x.strip()]
