@@ -249,7 +249,7 @@ def admin_interface():
                         st.error("Institution is a required field. ")
                     if not new_computer:
                         error_count_a+=1
-                        st.error("Computer is a required field (Select Unknown if no name is provided).")
+                        st.error("Computer is a required field. (Select Unknown if no name is provided.)")
                     if error_count_a == 0:
                         collection = get_collection()
                         collection.find_one_and_update(
