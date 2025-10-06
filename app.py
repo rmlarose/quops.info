@@ -344,7 +344,9 @@ def show_login_form():
 
 
     # --- Tabs for Login Options ---
-    tab1, tab2, tab3, tab4, tab5 = st.tabs(["About","Visualization", "Submit New Datapoint", "Update a Datapoint", "Admin Login"])
+    about_tab, visualization_tab, submit_tab, update_tab, admin_tab = st.tabs(
+        ["About", "Visualization", "Submit New Datapoint", "Update a Datapoint", "Admin Login"]
+    )
 
     
 
@@ -371,17 +373,18 @@ def show_login_form():
     
     html(f"<script>{switch(1)} </script>", height=0)
 
+    # TODO: Why is this defined here and not in database.py???
     # Database insertion function
     def insert_quantum_datapoint(
         reference, date, computation, num_qubits, num_2q_gates, num_1q_gates, total_gates,
-        circuit_depth, circuit_depth_measure, institution, computer
+        circuit_depth, circuit_depth_measure, institution, computer, status
     ):
         try:
             collection = get_collection()
             collection.insert_one({
                 "Reference": reference,
                 "Date": date,
-                "Computation": computation_list,
+                "Computation": computation,
                 "Number of qubits": num_qubits,
                 "Number of two-qubit gates": num_2q_gates,
                 "Number of single-qubit gates": num_1q_gates,
@@ -390,13 +393,15 @@ def show_login_form():
                 "Circuit depth measure": circuit_depth_measure,
                 "Institution": institution,
                 "Computer": computer,
+                "Status": status,
             })
             
             return True
         except Exception as e:
-            st.error(f"Database Error: {e}")
+            st.error(f"Unable to retrieve collection and/or submit datapoint. Error: {e}")
             return False
-    with tab1:
+
+    with about_tab:
         # Page title
 
         # Inject button + JS in one iframe
@@ -448,8 +453,7 @@ def show_login_form():
                 </script>
             """, height=500)
 
-    # === Tab 1: Visualization ===
-    with tab2:
+    with visualization_tab:
         
         #st.header("Visual Analysis")
         df: pd.DataFrame = get_dataframe()
@@ -684,7 +688,8 @@ def show_login_form():
                     height=0
                 )
     
-    with tab3:
+    """Submit a new datapoint."""
+    with submit_tab:
         institutions = list(df["Institution"].unique())
 
         #st.header("Submit Quantum Datapoint")
@@ -742,13 +747,14 @@ def show_login_form():
             </style>
         """, unsafe_allow_html=True)
             
-            st.markdown("Highlighted = required field")
+            st.markdown("Highlighted fields are required.")
 
             st.markdown('<div class="green-label">Reference</div>', unsafe_allow_html=True)
             reference = st.text_input(label='', key="reference_input", help = "The reference for the quantum computation, typically an arXiv or journal link")
 
             st.markdown('<div class="black-label">Experiment Date</div>', unsafe_allow_html=True)
             date = st.date_input("", value=datetime.today(), help="The date the experiment was performed or published (typically the date of the reference)")
+            date = datetime(date.year, date.month, date.day)  # Convert from datetime.date to datetime.datetime.
             
             st.markdown('<div class="black-label">Computation (comma-separated list)</div>', unsafe_allow_html=True)
             computation_raw = st.text_area("", help="The algorithm used/computation performed, for example Trotter, VQE, Phase estimation")
@@ -796,8 +802,6 @@ def show_login_form():
                 )
 
             st.markdown('<div class="green-label">Institution</div>', unsafe_allow_html=True)
-            #institution = st.text_input("", help="Who owns the quantum computer, e.g. Google, Quantinuum, QuEra")
-
             try:  
                 selected = st.selectbox(
                     "",
@@ -863,13 +867,21 @@ def show_login_form():
                     error_count_new+=1
                     st.error("Please fill either Number of two-Qubit operations or Total Number of Operations")
                 
-                #if reference and num_qubits and (num_2q_gates or total_gates):
                 if error_count_new==0:
                     computation_list = [x.strip() for x in computation_raw.split(",") if x.strip()]
-                    #error_mitigation_list = [x.strip() for x in error_mitigation_raw.split(",") if x.strip()]
                     success = insert_quantum_datapoint(
-                        reference, date, computation_list, num_qubits, num_2q_gates, num_1q_gates, total_gates,
-                        circuit_depth, circuit_depth_measure, institution, computer
+                        reference=reference,
+                        date=date,
+                        computation=computation_list,
+                        num_qubits=num_qubits,
+                        num_2q_gates=num_2q_gates,
+                        num_1q_gates=num_1q_gates,
+                        total_gates=total_gates,
+                        circuit_depth=circuit_depth,
+                        circuit_depth_measure=circuit_depth_measure,
+                        institution=institution,
+                        computer=computer,
+                        status="pending"  # TODO: Don't hardcode.
                     )
                 
                     if success:
@@ -882,7 +894,7 @@ def show_login_form():
 
 
     
-    with tab4:
+    with update_tab:
 
         
         if st.session_state.clicked_id is None:
@@ -981,6 +993,7 @@ def show_login_form():
                     #if reference and num_qubits and (num_2q_gates or total_gates):
                     if error_count==0:
                         collection = get_collection()
+                        # TODO: Should this be insserting or updating? I beleive this is updating, so use find_one_and_update.
                         collection.insert_one({
                             "Reference": new_ref,
                             "Date": new_date,
@@ -1003,7 +1016,7 @@ def show_login_form():
                     del st.session_state.update_captcha
                     st.rerun()
 
-    with tab5:
+    with admin_tab:
   
         st.subheader("Admin Login")
         
