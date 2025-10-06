@@ -169,13 +169,12 @@ def admin_interface():
                 
 
 
-
+        """Update an data entry."""
         if operations == "Update":
-            
+            # TODO: Why are we doing these actions on the dataframe??
             df_all['Computations'] = df_all['computation'].apply(
                 lambda x: ', '.join(x) if isinstance(x, list) else ''
                 )
-
             df_all = df_all.rename(columns={
                 'reference': 'Reference',
                 'date': 'Date',
@@ -238,23 +237,23 @@ def admin_interface():
                 if st.button("Save Changes"):
                     if not ref:
                         error_count_a+=1
-                        st.error("Please fill out Reference(url or citation) as it is a required field. ")
+                        st.error("Reference (url or citation) is a required field.")
                     if not new_qubits:
                         error_count_a+=1
-                        st.error("Please fill out Number of Qubits as it is a required field. ")
+                        st.error("Number of qubits is a required field.")
                     if not (new_num_2q_gates or new_total_gates):
                         error_count_a+=1
-                        st.error("Please fill either Number of two-Qubit operations or Total Number of Operations")
+                        st.error("Number of two-qubit operations OR Total number of operations is required.")
                     if not new_institution:
                         error_count_a+=1
-                        st.error("Please fill out Institution as it is a required field. ")
+                        st.error("Institution is a required field. ")
                     if not new_computer:
                         error_count_a+=1
-                        st.error("Please fill out Computer as it is a required field. ")
+                        st.error("Computer is a required field (Select Unknown if no name is provided).")
                     if error_count_a == 0:
                         collection = get_collection()
                         collection.find_one_and_update(
-                            {"_id": "TODO: ADD ID"},
+                            {"_id": id_selected},  # TODO: Need to check this carefully - the IDs are changing from SQL to MongoDB.
                             {
                                 "$set": {
                                     "Reference": ref,
@@ -268,7 +267,8 @@ def admin_interface():
                                     "Circuit depth measure": new_circuit_depth_measure,
                                     "Institution": new_institution,
                                     "Computer": new_computer,
-                                    "status": "approved"
+                                    "status": "approved",
+                                    "feedback": new_feedback,
                                 }
                             }
                         )
