@@ -31,9 +31,3 @@ def get_collection():
 def get_dataframe():
     collection = get_collection()
     return pd.DataFrame(list(collection.find({})))
-
-
-def load_data_from_db(conn: "PGConnection")->pd.DataFrame:
-    query = "SELECT * FROM quant_data where status = 'APPROVED';"
-    df_comp = pd.read_sql_query(query, conn)
-    return df_comp

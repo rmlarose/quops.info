@@ -18,12 +18,10 @@ import plotly.io as pio
 pio.templates.default = "plotly"
 from pyecharts.commons.utils import JsCode
 
-
 from captcha.image import ImageCaptcha
-
 from urllib.parse import urlparse
 
-from data_ingestion import get_dataframe, get_collection, get_admins
+from database import get_dataframe, get_collection, get_admins
 
 
 # Loading environment variables
