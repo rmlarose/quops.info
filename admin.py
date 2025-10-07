@@ -1,9 +1,22 @@
 """The Admin page of QuOps.Info."""
 
+import numpy as np
 import pandas as pd
 import streamlit as st
 
 from database import get_collection, get_dataframe
+
+
+def is_nan_or_nan_string(val):
+    # Check for actual NaN
+    if isinstance(val, float) and np.isnan(val):
+        return True
+    if isinstance(val, np.float64) and np.isnan(val):
+        return True
+    # Check for string 'nan', 'NaN', etc.
+    if isinstance(val, str) and val.strip().lower() == 'nan':
+        return True
+    return False
 
 
 def show_admin_page():
@@ -13,8 +26,6 @@ def show_admin_page():
 
     # --- Sidebar vertical tabs ---
     st.sidebar.title("🔧 Admin Panel")
-    # if st.sidebar.button("👥 Manage Users"):
-    #     st.session_state.admin_page = "User Table"
 
     if st.sidebar.button("📊 Manage Requests"):
         st.session_state.admin_page = "Data Table"
@@ -188,13 +199,10 @@ def show_admin_page():
 
     # Approve or reject pending submissions.
     if st.session_state.admin_page == "Data Table":
-        st.header("📈 Submissions Graph Data")
+        st.header("📈 Pending Submissions")
         try:
             collection = get_collection()
-            print("All database entries are")
-            print(list(collection.find({})))
             data = list(collection.find({"status": "pending"}))  # TODO: Query the database directly like this instead of finding all first.
-            print("Pending submissions are:", data)
             df_data = pd.DataFrame(data)
 
             if not data:

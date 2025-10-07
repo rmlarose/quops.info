@@ -1,7 +1,6 @@
 """The QuOps.Info website."""
 
 from datetime import datetime
-import math
 import random
 import string
 import time
@@ -30,17 +29,6 @@ if "logged_in" not in st.session_state:
 
 # Setting the wide page format
 st.set_page_config(layout="wide")
-
-def is_nan_or_nan_string(val):
-    # Check for actual NaN
-    if isinstance(val, float) and math.isnan(val):
-        return True
-    if isinstance(val, np.float64) and np.isnan(val):
-        return True
-    # Check for string 'nan', 'NaN', etc.
-    if isinstance(val, str) and val.strip().lower() == 'nan':
-        return True
-    return False
 
 
 def df_to_json_safe(df: pd.DataFrame):
