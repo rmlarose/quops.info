@@ -27,8 +27,12 @@ from database import get_dataframe, get_collection, get_admins
 if "logged_in" not in st.session_state:
     st.session_state.logged_in = 'login'
 
-# Setting the wide page format
-st.set_page_config(layout="wide")
+# Page setup.
+st.set_page_config(
+    page_title="QuOps.Info",
+    page_icon="./assets/logo.png",
+    layout="wide",
+)
 
 
 def df_to_json_safe(df: pd.DataFrame):
