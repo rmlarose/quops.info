@@ -1,5 +1,7 @@
 """The Admin page of QuOps.Info."""
 
+import datetime
+
 import numpy as np
 import pandas as pd
 import streamlit as st
@@ -41,8 +43,8 @@ def show_admin_page():
         df_all = get_dataframe()
         st.dataframe(df_all)
         df_ids = df_all["_id"].unique()
-        id_selected= st.selectbox("Select the id",df_ids)
-        operations = st.selectbox("Select the operation to be performed", ['Delete', 'Update'])
+        id_selected = st.selectbox("Select the id",df_ids)
+        operation = st.selectbox("Select the operation to be performed", ['Delete', 'Update'])
 
         # Initialize session state variables
         if "delete_requested" not in st.session_state:
@@ -50,7 +52,7 @@ def show_admin_page():
         if "delete_confirmed" not in st.session_state:
             st.session_state.delete_confirmed = False
 
-        if operations == "Delete":
+        if operation == "Delete":
             # Step 1: User clicks "Delete Record"
             if st.button("Delete Record"):
                 st.session_state.delete_requested = True
@@ -90,71 +92,60 @@ def show_admin_page():
                     st.rerun()
 
         """Update an data entry."""
-        if operations == "Update":
-            # TODO: Why are we doing these actions on the dataframe??
-            df_all['Computations'] = df_all['computation'].apply(
-                lambda x: ', '.join(x) if isinstance(x, list) else ''
-                )
-            df_all = df_all.rename(columns={
-                'reference': 'Reference',
-                'date': 'Date',
-                'computation': 'Computation',
-                'num_qubits': 'Number of qubits',
-                'num_2q_gates': 'Number of two-qubit gates',
-                'num_1q_gates': 'Number of single-qubit gates',
-                'total_gates':'Total number of gates',
-                'circuit_depth':'Circuit depth',
-                'circuit_depth_measure':'Circuit depth measure',
-                'institution':'Institution',
-                'computer':	'Computer',	
-                })
-            
+        if operation == "Update":
+            print("ADMIN UPDATE")
+            print("All data is:")
+            print(df_all)
+            print("Keys are:")
+            print(df_all.keys())
             record = df_all[df_all["_id"] == id_selected]
             if not record.empty:
-            
                 record = record.iloc[0]
 
                 ref = st.text_input("Reference", value=record['Reference'])
-
                 new_date = st.date_input("Date", value=record['Date'])
-                new_qubits = st.number_input("Number of Qubits", value=int(record['Number of qubits']))
+
+                if isinstance(new_date, datetime.date):
+                    new_date = datetime.datetime(new_date.year, new_date.month, new_date.day)
+
+                new_qubits = st.number_input("Number of qubits", value=int(record['Number of qubits']))
 
                 try:
-                    num_2q_gates_raw = st.text_input("Number of Two-Qubit Gates", value=record['Number of two-qubit gates'])
-                    new_num_2q_gates = float(num_2q_gates_raw) if num_2q_gates_raw and not is_nan_or_nan_string(num_2q_gates_raw) else None
+                    num_2q_gates_raw = st.text_input("Number of two-qubit gates", value=record['Number of two-qubit gates'])
+                    new_num_2q_gates = int(num_2q_gates_raw) if num_2q_gates_raw and not is_nan_or_nan_string(num_2q_gates_raw) else None
                 except:
                     st.error("Invalid input. Please input a valid number")
                     
 
                 try:
-                    num_1q_gates_raw = st.text_input("Number of Single-Qubit Gates", value=record['Number of single-qubit gates'])
-                    new_num_1q_gates = float(num_1q_gates_raw) if num_1q_gates_raw and not is_nan_or_nan_string(num_1q_gates_raw) else None
+                    num_1q_gates_raw = st.text_input("Number of single-qubit gates", value=record['Number of single-qubit gates'])
+                    new_num_1q_gates = int(num_1q_gates_raw) if num_1q_gates_raw and not is_nan_or_nan_string(num_1q_gates_raw) else None
                 except:
                     st.error("Invalid input. Please input a valid number")
                     
 
                 try:
                     total_gates_raw = st.text_input("Total number of gates", value=record['Total number of gates'])
-                    new_total_gates = float(total_gates_raw) if total_gates_raw and not is_nan_or_nan_string(total_gates_raw) else None
+                    new_total_gates = int(total_gates_raw) if total_gates_raw and not is_nan_or_nan_string(total_gates_raw) else None
                 except:
                     st.error("Invalid input. Please input a valid number")
                     
                 try:
                     circuit_depth_raw = st.text_input("Circuit depth", value=record['Circuit depth'])
-                    new_circuit_depth = float(circuit_depth_raw) if circuit_depth_raw and not is_nan_or_nan_string(circuit_depth_raw) else None
+                    new_circuit_depth = int(circuit_depth_raw) if circuit_depth_raw and not is_nan_or_nan_string(circuit_depth_raw) else None
                 except:
                     st.error("Invalid input. Please input a valid number")
                     
                 new_circuit_depth_measure = st.text_input("Circuit depth measure", value=record['Circuit depth measure'])
                 new_institution = st.text_input("Institution", value=record['Institution'])
-                new_computation = st.text_input("Computation", value=record['Computations'])
+                new_computation = st.text_input("Computation", value=record['Computation'])
                 new_computer = st.text_input("Computer", value=record['Computer'])
-                new_feedback = st.text_input("Comments", value=record['feedback'])
+                new_comments = st.text_input("Comments", value=record['comments'])
 
                 computation_list = [x.strip() for x in new_computation.split(",") if x.strip()]
 
                 error_count_a = 0
-                if st.button("Save Changes"):
+                if st.button("Save changes"):
                     if not ref:
                         error_count_a+=1
                         st.error("Reference (url or citation) is a required field.")
@@ -166,14 +157,14 @@ def show_admin_page():
                         st.error("Number of two-qubit operations OR Total number of operations is required.")
                     if not new_institution:
                         error_count_a+=1
-                        st.error("Institution is a required field. ")
+                        st.error("Institution is a required field.")
                     if not new_computer:
                         error_count_a+=1
-                        st.error("Computer is a required field. (Select Unknown if no name is provided.)")
+                        st.error("Computer is a required field. (Select Unknown if the computer is not named or unknown.)")
                     if error_count_a == 0:
                         collection = get_collection()
                         collection.find_one_and_update(
-                            {"_id": id_selected},  # TODO: Need to check this carefully - the IDs are changing from SQL to MongoDB.
+                            {"_id": id_selected},
                             {
                                 "$set": {
                                     "Reference": ref,
@@ -188,7 +179,7 @@ def show_admin_page():
                                     "Institution": new_institution,
                                     "Computer": new_computer,
                                     "status": "approved",
-                                    "feedback": new_feedback,
+                                    "comments": new_comments,
                                 }
                             }
                         )
@@ -219,11 +210,11 @@ def show_admin_page():
                                 st.table(row)
                             else:
                                 st.markdown("Update Datapoint")
-                                if "feedback" in row.keys():
-                                    feedback = row["feedback"]
+                                if "comments" in row.keys():
+                                    comments = row["comments"]
                                 else:
-                                    feedback = ""
-                                st.markdown(f"**Comments:** <span style='color:green'>{feedback}</span>", unsafe_allow_html=True)
+                                    comments = ""
+                                st.markdown(f"**Comments:** <span style='color:green'>{comments}</span>", unsafe_allow_html=True)
                                 st.table(row)
                             
 
