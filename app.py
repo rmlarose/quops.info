@@ -189,18 +189,18 @@ def show_app():
         # Filter controls in the first column
         with selection_column:
             # Institution filter
-            comp_options = list(df['Institution'].unique())
-            selected_comps = st.multiselect("Institution", comp_options, default=comp_options)
+            institutions_unique = sorted(df['Institution'].unique())
+            institutions_selected = st.multiselect("Institution", institutions_unique, default=institutions_unique)
 
             # Computer filter based on Institution
-            filtered_computer_options = df[df['Institution'].isin(selected_comps)]['Computer'].dropna().unique()
-            selected_computers = st.multiselect("Computer", filtered_computer_options, default=filtered_computer_options)
+            filtered_computer_options = sorted(df[df['Institution'].isin(institutions_selected)]['Computer'].dropna().unique())
+            computers_selected = st.multiselect("Computer", filtered_computer_options, default=filtered_computer_options)
 
             # Year filter
             years = [d.year for d in df["Date"]]
             df["Year"] = years
             years_unique = sorted(set(years))
-            selected_years = st.multiselect("Year", years_unique, default=years_unique)
+            selected_years = st.multiselect("Year", years_unique, default=years_unique)  # TODO: Explore options other than multiselect. Maybe a start, stop, [step]?
 
             # Y-axis selection
             y_options = [
@@ -244,8 +244,8 @@ def show_app():
         
         # Filter DataFrame
         filtered_df = df[
-            (df['Institution'].isin(selected_comps)) &
-            (df['Computer'].isin(selected_computers)) &
+            (df['Institution'].isin(institutions_selected)) &
+            (df['Computer'].isin(computers_selected)) &
             (df['Year'].isin(selected_years)) 
         ]
 
