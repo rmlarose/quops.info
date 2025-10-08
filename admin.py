@@ -72,7 +72,6 @@ def show_admin_page():
 
             # Step 3: Actually delete the record
             if st.session_state.delete_confirmed:
-                print("Attempting to delete record with _id", id_selected)
                 collection = get_collection()
                 collection.find_one_and_delete({"_id": id_selected})  # TODO: Almost certain bug, need to update `id_selected` for MongoDB. Old code is below:
 
@@ -93,11 +92,6 @@ def show_admin_page():
 
         """Update an data entry."""
         if operation == "Update":
-            print("ADMIN UPDATE")
-            print("All data is:")
-            print(df_all)
-            print("Keys are:")
-            print(df_all.keys())
             record = df_all[df_all["_id"] == id_selected]
             if not record.empty:
                 record = record.iloc[0]
