@@ -145,30 +145,37 @@ def show_app():
 
         # Filter controls in the first column
         with selection_column:
-            # Institution filter
-            institutions_unique = sorted(all_data['Institution'].unique())
-            institutions_selected = st.multiselect("Institution", institutions_unique, default=institutions_unique)
+            # Institution filter.
+            institutions_unique = sorted(all_data[database.INSTITUTION].unique())
+            institutions_selected = st.multiselect(
+                database.INSTITUTION, institutions_unique, default=institutions_unique
+            )
 
-            # Computer filter based on Institution
-            filtered_computer_options = sorted(all_data[all_data['Institution'].isin(institutions_selected)]['Computer'].dropna().unique())
-            computers_selected = st.multiselect("Computer", filtered_computer_options, default=filtered_computer_options)
+            # Computer filter (based on selected institutions).
+            filtered_computer_options = sorted(
+                all_data[all_data[database.INSTITUTION].isin(institutions_selected)][database.COMPUTER].dropna().unique()
+            )
+            computers_selected = st.multiselect(
+                database.COMPUTER, filtered_computer_options, default=filtered_computer_options
+            )
 
-            # Year filter
-            years = [d.year for d in all_data["Date"]]
-            all_data["Year"] = years
+            # Year filter.
+            years = [d.year for d in all_data[database.DATE]]
+            all_data["Year"] = years  # For convenience later.
             years_unique = sorted(set(years))
             selected_years = st.multiselect("Year", years_unique, default=years_unique)  # TODO: Explore options other than multiselect. Maybe a start, stop, [step]?
 
-            # Y-axis selection
+            # Y-axis selection.
             y_options = [
-                'Number of two-qubit gates',
-                'Number of single-qubit gates',
-                'Total number of gates',
-                'Circuit depth'
+                database.NUMBER_OF_TWO_QUBIT_GATES,
+                database.NUMBER_OF_QUBITS,
+                database.NUMBER_OF_ONE_QUBIT_GATES,
+                database.TOTAL_NUMBER_OF_GATES,
+                database.CIRCUIT_DEPTH,
             ]
-            y_axis = st.selectbox("Vertical axis", y_options)
+            y_axis = st.selectbox("Vertical axis", y_options, index=0)
 
-            # B-axis selection
+            # Marker size selection.
             b_options = [
                 'Date (more recent = larger)',
                 'Number of qubits',
@@ -192,23 +199,24 @@ def show_app():
                 all_data['bubble_size'] = all_data['bubble_size'] * 50 + 10  # range from 10 to 60
                 b_axis = 'bubble_size'
 
-            col5,col6 = st.columns(2)
+            col5, col6 = st.columns(2)
 
             with col5:
                 x_axis_scale = st.selectbox("Horizontal axis scale", ["Linear", "Log"], index=0)
             with col6:
-                y_axis_scale = st.selectbox("Vertical axis scale", ["Linear", "Log"], index=0)
+                y_axis_scale = st.selectbox("Vertical axis scale", ["Linear", "Log"], index=1)
         
-        # Filter DataFrame
-        filtered_df = all_data[
+        # Filter DataFrame for plotting.
+        data_to_plot = all_data[
             (all_data['Institution'].isin(institutions_selected)) &
             (all_data['Computer'].isin(computers_selected)) &
             (all_data['Year'].isin(selected_years)) 
         ]
+        graph_df = data_to_plot.copy()
 
         if b_axis != 'Equal size':
-            filtered_df = filtered_df.dropna(subset=[b_axis])
-            graph_df = filtered_df.copy()
+            data_to_plot = data_to_plot.dropna(subset=[b_axis])
+            graph_df = data_to_plot.copy()
             bubble_index = graph_df.columns.get_loc(b_axis)
             min_value = graph_df.iloc[:, bubble_index].min()
             max_value = graph_df.iloc[:, bubble_index].max()
@@ -220,13 +228,12 @@ def show_app():
             max_value = float(max_value) if max_value is not None else 0
             b_size = [50,120]
         else:
-            graph_df = filtered_df.copy()
+            graph_df = data_to_plot.copy()
             bubble_index = graph_df.columns.get_loc('Date')
             min_value = 50
             max_value = 50
             b_size = [50,50]
 
-        # Assume filtered_df, y_axis, b_axis are already defined
         with plot_column:
             # if x_axis_scale == 'Log':
             #     graph_df['Number of qubits'] = np.log(graph_df['Number of qubits'].replace(0, np.nan).dropna())
