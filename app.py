@@ -165,6 +165,8 @@ def show_app():
             years_unique = sorted(set(years))
             selected_years = st.multiselect("Year", years_unique, default=years_unique)  # TODO: Explore options other than multiselect. Maybe a start, stop, [step]?
 
+            # TODO: Add horizontal axis selection. (Qubits / date).
+
             # Y-axis selection.
             y_options = [
                 database.NUMBER_OF_TWO_QUBIT_GATES,
@@ -178,17 +180,16 @@ def show_app():
             # Marker size selection.
             b_options = [
                 'Date (more recent = larger)',
-                'Number of qubits',
-                'Number of two-qubit gates',
-                'Number of single-qubit gates',
-                'Total number of gates',
-                'Circuit depth',
-                'Equal size'
-                
+                'Equal size',
+                database.NUMBER_OF_QUBITS,
+                database.NUMBER_OF_TWO_QUBIT_GATES,
+                database.NUMBER_OF_ONE_QUBIT_GATES,
+                database.TOTAL_NUMBER_OF_GATES,
+                database.CIRCUIT_DEPTH,
             ]
-            b_axis = st.selectbox("Marker size", b_options)
+            b_axis = st.selectbox("Marker size", b_options, index=0)
          
-            if b_axis == 'Date (more recent = larger)':
+            if b_axis == b_options[0]:
                 dates = [d for d in all_data.Date]
                 date_min = min(dates)
                 date_max = max(dates)
@@ -196,7 +197,7 @@ def show_app():
                 all_data['bubble_size'] = all_data['bubble_size'].apply(lambda x: (x - date_min).days / (date_max - date_min).days if pd.notnull(x) else None)
 
                 # Scale to a desired range (e.g., 10–60)
-                all_data['bubble_size'] = all_data['bubble_size'] * 50 + 10  # range from 10 to 60
+                all_data['bubble_size'] = all_data['bubble_size'] * 50 + 10  # range from 10 to 60. TODO: Make these parameters.
                 b_axis = 'bubble_size'
 
             col5, col6 = st.columns(2)
@@ -566,8 +567,6 @@ def show_app():
 
     # The tab for updating a datapoint.
     with update_tab:
-
-        
         if st.session_state.clicked_id is None:
             st.subheader("Please provide the necessary details…")
             update_id = all_data.iloc[0]["_id"]
