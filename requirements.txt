@@ -1,8 +1,7 @@
 numpy
 pandas
-streamlit
+streamlit[charts]
 plotly
 streamlit_plotly_events
 captcha
-streamlit_echarts
 pymongo

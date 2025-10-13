@@ -2,7 +2,7 @@
 
 from dataclasses import dataclass
 from datetime import datetime
-from typing import List
+from typing import Any, Dict, List
 
 import pandas as pd
 import streamlit as st
@@ -10,6 +10,7 @@ from pymongo import MongoClient
 
 
 # Constants: Keys for data.
+ID: str = "_id"
 REFERENCE: str = "Reference"
 DATE: str = "Date"
 COMPUTATION: str = "Computation"
@@ -29,29 +30,28 @@ COMMENTS: str = "comments"
 class Status:
     APPROVED: str = "approved"
     PENDING: str = "pending"
+    UPDATE_REQUESTED: str = "UPDATE REQUESTED"
 
 
-@st.cache_resource
 def get_connection():
     return MongoClient(st.secrets["mongo"]["host"])
 
 
-@st.cache_resource
 def get_database():
     client = get_connection()
     return client[st.secrets["mongo"]["database"]]
 
 
-@st.cache_resource
 def get_collection():
     database = get_database()
     return database[st.secrets["mongo"]["collection"]]
 
 
-@st.cache_resource
-def get_dataframe():
+def get_dataframe(filter: Dict[Any, Any] | None = None):
+    if not filter:
+        filter = {}
     collection = get_collection()
-    return pd.DataFrame(list(collection.find({})))
+    return pd.DataFrame(list(collection.find(filter)))
 
 
 def insert_datapoint(
@@ -95,7 +95,6 @@ def insert_datapoint(
         return False
 
 
-@st.cache_resource
 def get_admins():
     client = get_connection()
     db = client[st.secrets["mongo"]["adatabase"]]

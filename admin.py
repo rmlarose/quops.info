@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 import streamlit as st
 
-from database import get_collection, get_dataframe
+import database
 
 
 def is_nan_or_nan_string(val):
@@ -40,7 +40,7 @@ def show_admin_page():
         st.rerun()
         
     if st.session_state.admin_page == "Database":
-        df_all = get_dataframe()
+        df_all = database.get_dataframe()
         st.dataframe(df_all)
         df_ids = df_all["_id"].unique()
         id_selected = st.selectbox("Select the id",df_ids)
@@ -72,7 +72,7 @@ def show_admin_page():
 
             # Step 3: Actually delete the record
             if st.session_state.delete_confirmed:
-                collection = get_collection()
+                collection = database.get_collection()
                 collection.find_one_and_delete({"_id": id_selected})  # TODO: Almost certain bug, need to update `id_selected` for MongoDB. Old code is below:
 
                 """
@@ -186,8 +186,13 @@ def show_admin_page():
     if st.session_state.admin_page == "Data Table":
         st.header("📈 Pending Submissions")
         try:
-            collection = get_collection()
-            data = list(collection.find({"status": "pending"}))  # TODO: Query the database directly like this instead of finding all first.
+            collection = database.get_collection()
+            data = list(
+                collection.find(
+                    {"$or": 
+                     [{database.STATUS: database.Status.PENDING},
+                      {database.STATUS: database.Status.UPDATE_REQUESTED}]
+                      }))  # TODO: Query the database directly like this instead of finding all first.
             df_data = pd.DataFrame(data)
 
             if not data:
@@ -204,31 +209,38 @@ def show_admin_page():
                                 st.table(row)
                             else:
                                 st.markdown("Update Datapoint")
-                                if "comments" in row.keys():
-                                    comments = row["comments"]
+                                if database.COMMENTS in row.keys():  # TODO: This should always be true now after data updates.
+                                    comments = row[database.COMMENTS]
                                 else:
                                     comments = ""
-                                st.markdown(f"**Comments:** <span style='color:green'>{comments}</span>", unsafe_allow_html=True)
+                                st.markdown(f"**Justification for changes:** <span style='color:green'>{comments}</span>", unsafe_allow_html=True)
                                 st.table(row)
                             
 
                         with col2:
                             c1, c2 = st.columns(2)
                             if c1.button("✅ Approve", key=f"approve_{row['_id']}"):
-                                collection = get_collection()
+                                collection = database.get_collection()
 
-                                if row['status']=='pending':
+                                if row[database.STATUS]==database.Status.PENDING:
                                     collection.find_one_and_update(
-                                        {"_id": row["_id"]}, {"$set": {"status": "approved"}}
+                                        {"_id": row["_id"]}, {"$set": {database.STATUS: database.Status.APPROVED}}
                                     )
-                                else:
-                                    collection.find_one_and_delete({"_id": row["_id"]})
+                                    st.success(f"Approved ID {row['_id']}")
+                                    st.rerun()
+                                elif row[database.STATUS] == database.Status.UPDATE_REQUESTED:
+                                    # Find and delete the old data.
+                                    collection.find_one_and_delete({database.REFERENCE: row[database.REFERENCE], database.STATUS: database.Status.APPROVED})
 
-                                st.success(f"Approved ID {row['_id']}")
-                                st.rerun()
+                                    # Change the status to approved.
+                                    collection.find_one_and_update(
+                                        {database.REFERENCE: row[database.REFERENCE]}, {"$set": {database.STATUS: database.Status.APPROVED}}
+                                    )
+                                    st.success(f"Approved ID {row['_id']}")
+                                    st.rerun()
 
                             if c2.button("❌ Reject", key=f"reject_{row['_id']}"):
-                                collection = get_collection()
+                                collection = database.get_collection()
                                 collection.find_one_and_delete({"_id": row["_id"]})
                                 st.warning(f"Rejected ID {row['_id']}")
                                 st.rerun()
