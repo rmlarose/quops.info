@@ -20,7 +20,7 @@ from captcha.image import ImageCaptcha
 from urllib.parse import urlparse
 
 from admin import show_admin_page
-from database import get_dataframe, get_collection, get_admins
+import database
 
 
 # Initialize session state for Login
@@ -58,25 +58,13 @@ def is_hyperlink(s):
         return False
 
 
-# Check credentials for admin and user
-def check_credentials(username, password):
-    try:
-        ad = get_admins()
-        user = ad.find_one({username: password})
-        return user is not None
-    except Exception as e:
-        st.error(f"Database error: {e}")
-        return False
-
-
 def show_app():
-        # --- Page Setup ---
     st.title("🔬 Quantum Operations (QuOps) Info")
 
     if "clicked_id" not in st.session_state:
         st.session_state.clicked_id = None
     
-    # --- Tabs for Login Options ---
+    # Define tabs.
     about_tab, visualization_tab, submit_tab, update_tab, admin_tab = st.tabs(
         ["About", "Visualization", "Submit New Datapoint", "Update a Datapoint", "Admin Login"]
     )
@@ -91,45 +79,14 @@ def show_app():
     # if last_row.button("Update Datapoint"):
     #     html(f"<script>{switch(3)}</script>", height=0)
 
-    # define the costant
     length_captcha = 4
     width = 200
     height = 150
     
     html(f"<script>{switch(1)} </script>", height=0)
 
-    # TODO: Why is this defined here and not in database.py???
-    # Database insertion function
-    def insert_quantum_datapoint(
-        reference, date, computation, num_qubits, num_2q_gates, num_1q_gates, total_gates,
-        circuit_depth, circuit_depth_measure, institution, computer, status
-    ):
-        try:
-            collection = get_collection()
-            collection.insert_one({
-                "Reference": reference,
-                "Date": date,
-                "Computation": computation,
-                "Number of qubits": num_qubits,
-                "Number of two-qubit gates": num_2q_gates,
-                "Number of single-qubit gates": num_1q_gates,
-                "Total number of gates": total_gates,
-                "Circuit depth": circuit_depth,
-                "Circuit depth measure": circuit_depth_measure,
-                "Institution": institution,
-                "Computer": computer,
-                "status": status,
-            })
-            
-            return True
-        except Exception as e:
-            st.error(f"Unable to retrieve collection and/or submit datapoint. Error: {e}")
-            return False
-
     # The "About" tab.
     with about_tab:
-        # Page title
-
         # Inject button + JS in one iframe
         html(f"""
              <style>
@@ -179,26 +136,26 @@ def show_app():
                 </script>
             """, height=500)
 
-    # The main visualization tab with the plot.
+    # The main visualization/plotting tab.
     with visualization_tab:
-        df: pd.DataFrame = get_dataframe()
+        all_data: pd.DataFrame = database.get_dataframe()
 
-        # Create two columns
+        # Create two columns: Left column for filtering/selecting criteria in the plot, right column for the plot itself.
         selection_column, plot_column = st.columns([1, 2])
 
         # Filter controls in the first column
         with selection_column:
             # Institution filter
-            institutions_unique = sorted(df['Institution'].unique())
+            institutions_unique = sorted(all_data['Institution'].unique())
             institutions_selected = st.multiselect("Institution", institutions_unique, default=institutions_unique)
 
             # Computer filter based on Institution
-            filtered_computer_options = sorted(df[df['Institution'].isin(institutions_selected)]['Computer'].dropna().unique())
+            filtered_computer_options = sorted(all_data[all_data['Institution'].isin(institutions_selected)]['Computer'].dropna().unique())
             computers_selected = st.multiselect("Computer", filtered_computer_options, default=filtered_computer_options)
 
             # Year filter
-            years = [d.year for d in df["Date"]]
-            df["Year"] = years
+            years = [d.year for d in all_data["Date"]]
+            all_data["Year"] = years
             years_unique = sorted(set(years))
             selected_years = st.multiselect("Year", years_unique, default=years_unique)  # TODO: Explore options other than multiselect. Maybe a start, stop, [step]?
 
@@ -225,14 +182,14 @@ def show_app():
             b_axis = st.selectbox("Marker size", b_options)
          
             if b_axis == 'Date (more recent = larger)':
-                dates = [d for d in df.Date]
+                dates = [d for d in all_data.Date]
                 date_min = min(dates)
                 date_max = max(dates)
-                df["bubble_size"] = dates
-                df['bubble_size'] = df['bubble_size'].apply(lambda x: (x - date_min).days / (date_max - date_min).days if pd.notnull(x) else None)
+                all_data["bubble_size"] = dates
+                all_data['bubble_size'] = all_data['bubble_size'].apply(lambda x: (x - date_min).days / (date_max - date_min).days if pd.notnull(x) else None)
 
                 # Scale to a desired range (e.g., 10–60)
-                df['bubble_size'] = df['bubble_size'] * 50 + 10  # range from 10 to 60
+                all_data['bubble_size'] = all_data['bubble_size'] * 50 + 10  # range from 10 to 60
                 b_axis = 'bubble_size'
 
             col5,col6 = st.columns(2)
@@ -243,10 +200,10 @@ def show_app():
                 y_axis_scale = st.selectbox("Vertical axis scale", ["Linear", "Log"], index=0)
         
         # Filter DataFrame
-        filtered_df = df[
-            (df['Institution'].isin(institutions_selected)) &
-            (df['Computer'].isin(computers_selected)) &
-            (df['Year'].isin(selected_years)) 
+        filtered_df = all_data[
+            (all_data['Institution'].isin(institutions_selected)) &
+            (all_data['Computer'].isin(computers_selected)) &
+            (all_data['Year'].isin(selected_years)) 
         ]
 
         if b_axis != 'Equal size':
@@ -399,7 +356,7 @@ def show_app():
     
     # The tab for submitting a new datapoint.
     with submit_tab:
-        institutions = list(df["Institution"].unique())
+        institutions = list(all_data["Institution"].unique())
 
         #st.header("Submit Quantum Datapoint")
 
@@ -492,7 +449,7 @@ def show_app():
             circuit_depth = int(circuit_depth_raw) if circuit_depth_raw.strip().isdigit() else None
 
             st.markdown('<div class="black-label">Circuit Depth Measure</div>', unsafe_allow_html=True)
-            cdm_options = list(df["Circuit depth measure"].unique())
+            cdm_options = list(all_data["Circuit depth measure"].unique())
             try:  
                 selected_cdm = st.selectbox(
                     "",
@@ -532,7 +489,7 @@ def show_app():
             
             st.markdown('<div class="green-label">Computer</div>', unsafe_allow_html=True)
             if selected != "Other":
-                computers = list(df[df["Institution"]== institution]["Computer"].unique())
+                computers = list(all_data[all_data["Institution"]== institution]["Computer"].unique())
                 selected_comp = st.selectbox("",options = computers+["Other"],index=0,help ="The name or other identifying label for the quantum computer")
                 try:
                     if selected_comp == "Other":
@@ -578,7 +535,7 @@ def show_app():
                 
                 if error_count_new==0:
                     computation_list = [x.strip() for x in computation_raw.split(",") if x.strip()]
-                    success = insert_quantum_datapoint(
+                    success = database.insert_datapoint(
                         reference=reference,
                         date=date,
                         computation=computation_list,
@@ -590,11 +547,11 @@ def show_app():
                         circuit_depth_measure=circuit_depth_measure,
                         institution=institution,
                         computer=computer,
-                        status="pending"  # TODO: Don't hardcode.
+                        status=database.Status.PENDING
                     )
                 
                     if success:
-                        st.success("Quantum datapoint submitted successfully!")
+                        st.success("Datapoint submitted successfully!")
                         #st.session_state['controllo'] = False
                         
                         st.session_state.submission_success = True
@@ -606,14 +563,14 @@ def show_app():
         
         if st.session_state.clicked_id is None:
             st.subheader("Please provide the necessary details…")
-            update_id = df.iloc[0]["_id"]
+            update_id = all_data.iloc[0]["_id"]
         else:
             st.subheader("Please provide the necessary details…")
             update_id = st.session_state.clicked_id
             st.session_state.visited = 1
         
         
-        record = df[df['_id'] == update_id]
+        record = all_data[all_data['_id'] == update_id]
 
         if not record.empty:
         
@@ -696,7 +653,7 @@ def show_app():
                     
                     #if reference and num_qubits and (num_2q_gates or total_gates):
                     if error_count==0:
-                        collection = get_collection()
+                        collection = database.get_collection()
                         # TODO: Should this be insserting or updating? I beleive this is updating, so use find_one_and_update.
                         collection.insert_one({
                             "Reference": new_ref,
@@ -727,7 +684,7 @@ def show_app():
         admin_user = st.text_input("Username", key="admin_user")
         admin_pass = st.text_input("Password", type="password", key="admin_pass")
         if st.button("Login as Admin"):
-            if check_credentials(admin_user, admin_pass):
+            if database.is_valid_admin(admin_user, admin_pass):
                 st.success("✅ Admin login successful!")
                 st.markdown("Welcome to the admin dashboard.")
                 st.session_state.logged_in = 'admin'
