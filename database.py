@@ -67,26 +67,28 @@ def insert_datapoint(
     institution: str,
     computer: str,
     status: str,
-    comments: str,
+    comments: str = "",
 ) -> bool:
     try:
         collection = get_collection()
-        collection.insert_one({
-            REFERENCE: reference,
-            DATE: date,
-            COMPUTATION: computation,
-            NUMBER_OF_QUBITS: num_qubits,
-            NUMBER_OF_TWO_QUBIT_GATES: num_2q_gates,
-            NUMBER_OF_ONE_QUBIT_GATES: num_1q_gates,
-            TOTAL_NUMBER_OF_GATES: total_gates,
-            CIRCUIT_DEPTH: circuit_depth,
-            CIRCUIT_DEPTH_MEASURE: circuit_depth_measure,
-            INSTITUTION: institution,
-            COMPUTER: computer,
-            STATUS: status,
-            COMMENTS: comments,
-        })
-        
+        collection.insert_one(
+            {
+                REFERENCE: reference,
+                DATE: date,
+                COMPUTATION: computation,
+                NUMBER_OF_QUBITS: num_qubits,
+                NUMBER_OF_TWO_QUBIT_GATES: num_2q_gates,
+                NUMBER_OF_ONE_QUBIT_GATES: num_1q_gates,
+                TOTAL_NUMBER_OF_GATES: total_gates,
+                CIRCUIT_DEPTH: circuit_depth,
+                CIRCUIT_DEPTH_MEASURE: circuit_depth_measure,
+                INSTITUTION: institution,
+                COMPUTER: computer,
+                STATUS: status,
+                COMMENTS: comments,
+            }
+        )
+
         return True
     except Exception as e:
         st.error(f"Unable to retrieve collection and/or insert datapoint. Error: {e}")
