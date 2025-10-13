@@ -4,7 +4,6 @@ from datetime import datetime
 import random
 import string
 
-import numpy as np
 import pandas as pd
 
 import streamlit as st
@@ -12,12 +11,7 @@ from streamlit.components.v1 import html
 
 import plotly.express as px
 
-import plotly.io as pio
-
-pio.templates.default = "plotly"
-
 from captcha.image import ImageCaptcha
-from urllib.parse import urlparse
 
 from admin import show_admin_page
 import database
@@ -35,31 +29,6 @@ st.set_page_config(
     layout="wide",
 )
 
-
-def df_to_json_safe(df: pd.DataFrame):
-    """
-    Convert a pandas DataFrame into a JSON-safe list-of-lists format.
-    Ensures numpy.int64, numpy.float64, NaN, etc. are converted to Python-native types.
-    """
-
-    def to_native(val):
-        if isinstance(val, (np.generic,)):  # np.int64, np.float64, etc.
-            return val.item()
-        if pd.isna(val):  # Handle NaN / None
-            return None
-        return val
-
-    return [df.columns.tolist()] + [
-        [to_native(v) for v in row] for row in df.values.tolist()
-    ]
-
-
-def is_hyperlink(s):
-    try:
-        result = urlparse(s)
-        return all([result.scheme in ("http", "https"), result.netloc])
-    except ValueError:
-        return False
 
 
 def show_app():
