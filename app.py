@@ -208,8 +208,9 @@ def show_app():
             col5, col6 = st.columns(2)
 
             with col5:
+                xscale_options = ["Linear"] if x_axis_selection == database.DATE else ["Linear", "Log"]
                 x_axis_scale = st.selectbox(
-                    "Horizontal axis scale", ["Linear", "Log"], index=0
+                    "Horizontal axis scale", xscale_options, index=0
                 )
             with col6:
                 y_axis_scale = st.selectbox(
