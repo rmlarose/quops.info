@@ -21,6 +21,7 @@ from urllib.parse import urlparse
 
 from admin import show_admin_page
 import database
+import utils
 
 
 # Initialize session state for Login
@@ -59,18 +60,6 @@ def is_hyperlink(s):
         return all([result.scheme in ("http", "https"), result.netloc])
     except ValueError:
         return False
-
-
-def is_nan_or_nan_string(val):
-    # Check for actual NaN
-    if isinstance(val, float) and np.isnan(val):
-        return True
-    if isinstance(val, np.float64) and np.isnan(val):
-        return True
-    # Check for string 'nan', 'NaN', etc.
-    if isinstance(val, str) and val.strip().lower() == 'nan':
-        return True
-    return False
 
 
 def show_app():
@@ -655,7 +644,7 @@ def show_app():
             )
             new_num_2q_gates = (
                 float(num_2q_gates_raw)
-                if num_2q_gates_raw and not is_nan_or_nan_string(num_2q_gates_raw)
+                if num_2q_gates_raw and not utils.is_nan_or_nan_string(num_2q_gates_raw)
                 else None
             )
         except:
@@ -669,7 +658,7 @@ def show_app():
             )
             new_num_1q_gates = (
                 int(num_1q_gates_raw)
-                if num_1q_gates_raw and not is_nan_or_nan_string(num_1q_gates_raw)
+                if num_1q_gates_raw and not utils.is_nan_or_nan_string(num_1q_gates_raw)
                 else None
             )
         except:
@@ -683,7 +672,7 @@ def show_app():
             )
             new_total_gates = (
                 int(total_gates_raw)
-                if total_gates_raw and not is_nan_or_nan_string(total_gates_raw)
+                if total_gates_raw and not utils.is_nan_or_nan_string(total_gates_raw)
                 else None
             )
         except:
@@ -697,7 +686,7 @@ def show_app():
             )
             new_circuit_depth = (
                 int(circuit_depth_raw)
-                if circuit_depth_raw and not is_nan_or_nan_string(circuit_depth_raw)
+                if circuit_depth_raw and not utils.is_nan_or_nan_string(circuit_depth_raw)
                 else None
             )
         except:
