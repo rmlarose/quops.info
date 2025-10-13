@@ -10,6 +10,6 @@ def is_nan_or_nan_string(val: Any) -> bool:
         return True
     if isinstance(val, np.float64) and np.isnan(val):
         return True
-    if isinstance(val, str) and val.strip().lower() == 'nan':
+    if isinstance(val, str) and val.strip().lower() == "nan":
         return True
     return False

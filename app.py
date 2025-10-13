@@ -18,7 +18,7 @@ import database
 import utils
 
 
-# Initialize session state for Login
+# Initialize session state for login.  TODO: Is this still needed?
 if "logged_in" not in st.session_state:
     st.session_state.logged_in = "login"
 
@@ -28,7 +28,6 @@ st.set_page_config(
     page_icon="./assets/logo.png",
     layout="wide",
 )
-
 
 
 def show_app():
@@ -121,7 +120,9 @@ def show_app():
 
     # The main visualization/plotting tab.
     with visualization_tab:
-        all_data: pd.DataFrame = database.get_dataframe(filter={database.STATUS: database.Status.APPROVED})
+        all_data: pd.DataFrame = database.get_dataframe(
+            filter={database.STATUS: database.Status.APPROVED}
+        )
 
         # Create two columns: Left column for filtering/selecting criteria in the plot, right column for the plot itself.
         selection_column, plot_column, url_column = st.columns([2, 5, 1])
@@ -157,6 +158,11 @@ def show_app():
             )  # TODO: Explore options other than multiselect. Maybe a start, stop, [step]?
 
             # TODO: Add horizontal axis selection. (Qubits / date).
+            x_options = [
+                database.NUMBER_OF_QUBITS,
+                database.DATE,
+            ]
+            x_axis_selection = st.selectbox("Horizontal axis", x_options, index=0)
 
             # Y-axis selection.
             y_options = [
@@ -166,7 +172,7 @@ def show_app():
                 database.TOTAL_NUMBER_OF_GATES,
                 database.CIRCUIT_DEPTH,
             ]
-            y_axis = st.selectbox("Vertical axis", y_options, index=0)
+            y_axis_selection = st.selectbox("Vertical axis", y_options, index=0)
 
             # Marker size selection.
             b_options = [
@@ -243,26 +249,28 @@ def show_app():
             graph_df["_id"] = [str(id) for id in graph_df["_id"]]
             graph_df = graph_df.fillna("")
 
-            graph_df["Quantum computer"] = graph_df["Institution"] + " " + graph_df["Computer"]
+            graph_df["Quantum computer"] = (
+                graph_df["Institution"] + " " + graph_df["Computer"]
+            )
             computers = list(graph_df["Quantum computer"].unique())
             colors = {
                 "IBM": "#006699",
                 "Google": "#DB4437",
-                "Quantinuum": "#30a08e"
+                "Quantinuum": "#30a08e",
             }  # TODO: Use custom colors for plotting based on institution colors.
 
             fig = px.scatter(
                 data_frame=graph_df,
-                x=database.NUMBER_OF_QUBITS,  # TODO: Allow for any selection.
-                y=y_axis,
+                x=x_axis_selection,
+                y=y_axis_selection,
                 log_x=x_axis_scale == "Log",
                 log_y=y_axis_scale == "Log",
                 size="bubble_size",  # TODO: Set to be selected marker size.
                 color="Quantum computer",
                 hover_data={
                     database.REFERENCE: True,
-                    database.INSTITUTION: True, 
-                    database.COMPUTER: True, 
+                    database.INSTITUTION: True,
+                    database.COMPUTER: True,
                     database.DATE: True,
                     database.COMPUTATION: True,
                     "bubble_size": False,
@@ -272,18 +280,30 @@ def show_app():
             )
 
             def handle_selection():
-                event = st.session_state.click  # This is defined via key="click" in st.plotly_chart below.
+                event = (
+                    st.session_state.click
+                )  # This is defined via key="click" in st.plotly_chart below.
                 if event and event.selection.points:
                     selected_point = event.selection.points[0]
-                    url = selected_point["customdata"][0]  # TODO: Will index 0 always be the URL?
+                    url = selected_point["customdata"][
+                        0
+                    ]  # TODO: Will index 0 always be the URL?
                     with url_column:
-                        st.link_button(f"Open reference: {url}", url, use_container_width=True, type="primary", icon="🔎")
-                        # st.link_button()  # TODO: Add "update this point" option. See https://discuss.streamlit.io/t/switch-tabs-programitically/37887/8. 
+                        st.link_button(
+                            f"Open reference: {url}",
+                            url,
+                            use_container_width=True,
+                            type="primary",
+                            icon="🔎",
+                        )
+                        # st.link_button()  # TODO: Add "update this point" option. See https://discuss.streamlit.io/t/switch-tabs-programitically/37887/8.
                     # st.write(f"Selected point: {selected_point}")
                 # else:
                 #     st.write("No point selected.")
 
-            st.plotly_chart(fig, on_select=handle_selection, selection_mode="points", key="click")
+            st.plotly_chart(
+                fig, on_select=handle_selection, selection_mode="points", key="click"
+            )
 
     # The tab for submitting a new datapoint.
     with submit_tab:
@@ -520,7 +540,9 @@ def show_app():
             submit = st.button("Submit")
 
             if st.session_state.get("submission_success"):
-                st.success("Datapoint submitted successfully and is now pending admin approval - thank you!")
+                st.success(
+                    "Datapoint submitted successfully and is now pending admin approval - thank you!"
+                )
                 del st.session_state["submission_success"]
 
             error_count_new = 0
@@ -587,7 +609,6 @@ def show_app():
 
         # if not record.empty:
 
-        
         all_data = database.get_dataframe()
         reference_to_update = st.selectbox(  # TODO: Note: Can select based off data ID here, which is guarunteed to always be unique.
             database.REFERENCE,
@@ -655,7 +676,8 @@ def show_app():
             )
             new_circuit_depth = (
                 int(circuit_depth_raw)
-                if circuit_depth_raw and not utils.is_nan_or_nan_string(circuit_depth_raw)
+                if circuit_depth_raw
+                and not utils.is_nan_or_nan_string(circuit_depth_raw)
                 else None
             )
         except:
@@ -686,9 +708,7 @@ def show_app():
             help="Clear description of the changes made with justification. For example: 'Changed the number of two-qubit operations from 512 to 1024. The correct number (1024 two-qubit operations) is stated in the caption of Figure 1 of the reference.'",
         )
 
-        computation_list = [
-            x.strip() for x in new_computation.split(",") if x.strip()
-        ]
+        computation_list = [x.strip() for x in new_computation.split(",") if x.strip()]
         # error_mitigation_list = [x.strip() for x in new_mitigation.split(",") if x.strip()]
 
         # --- CAPTCHA ---
@@ -696,9 +716,7 @@ def show_app():
 
         if "update_captcha" not in st.session_state:
             st.session_state.update_captcha = "".join(
-                random.choices(
-                    string.ascii_uppercase + string.digits, k=length_captcha
-                )
+                random.choices(string.ascii_uppercase + string.digits, k=length_captcha)
             )
 
         image1 = ImageCaptcha(width=width, height=height)
@@ -731,9 +749,7 @@ def show_app():
                     )
                 if not new_institution:
                     error_count += 1
-                    st.error(
-                        "Please fill out Institution as it is a required field. "
-                    )
+                    st.error("Please fill out Institution as it is a required field. ")
                 if not new_computer:
                     error_count += 1
                     st.error("Please fill out Computer as it is a required field. ")
@@ -764,10 +780,10 @@ def show_app():
                             database.COMMENTS: comments,
                         }
                     )
-                    st.success(f"Update request successfully submitted for reference {record['Reference']}")
-                    del (
-                        st.session_state.update_captcha
-                    )  # Reset captcha after success
+                    st.success(
+                        f"Update request successfully submitted for reference {record['Reference']}"
+                    )
+                    del st.session_state.update_captcha  # Reset captcha after success
             else:
                 st.error("🚨 Invalid Captcha")
                 del st.session_state.update_captcha

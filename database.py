@@ -28,6 +28,8 @@ COMMENTS: str = "comments"
 
 @dataclass
 class Status:
+    """Valid options for the STATUS field of database entries."""
+
     APPROVED: str = "approved"
     PENDING: str = "pending"
     UPDATE_REQUESTED: str = "UPDATE REQUESTED"
