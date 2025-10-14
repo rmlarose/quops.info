@@ -203,29 +203,26 @@ def show_app():
                 & (all_data["Computer"].isin(computers_selected))
                 & (all_data["Year"].isin(years_selected))
             ]
-            # graph_df["Date"] = graph_df["Date"].astype(str)
-            graph_df["_id"] = [str(id) for id in graph_df["_id"]]
-            graph_df = graph_df.fillna("")
+            # graph_df = graph_df.fillna("")
 
             if marker_size_selection == marker_size_options[0]:
-                dates = [d for d in graph_df.Date]
-                date_min = min(dates)
-                date_max = max(dates)
-                graph_df["bubble_size"] = dates
-                graph_df["bubble_size"] = graph_df["bubble_size"].apply(
+                date_min = min(graph_df[database.DATE])
+                date_max = max(graph_df[database.DATE])
+                graph_df["marker_size"] = graph_df[database.DATE]
+                graph_df["marker_size"] = graph_df["marker_size"].apply(
                     lambda x: (
                         (x - date_min).days / (date_max - date_min).days
                         if pd.notnull(x)
                         else None
                     )
                 )
-                graph_df["bubble_size"] = graph_df["bubble_size"] * 125 + 10
-                marker_size_selection = "bubble_size"
+                graph_df["marker_size"] = graph_df["marker_size"] * 125 + 10
+                marker_size_selection = "marker_size"
 
             elif marker_size_selection == "Equal size":
-                graph_df["bubble_size"] = 125
+                graph_df["marker_size"] = 125
             else:
-                graph_df["bubble_size"] = graph_df[marker_size_selection]
+                graph_df["marker_size"] = graph_df[marker_size_selection]
 
 
             graph_df["Quantum computer"] = (
@@ -244,7 +241,7 @@ def show_app():
                 y=y_axis_selection,
                 log_x=x_axis_scale == "Log",
                 log_y=y_axis_scale == "Log",
-                size="bubble_size",  # TODO: Set to be selected marker size.
+                size="marker_size",
                 color="Quantum computer",
                 hover_data={
                     database.REFERENCE: True,
@@ -252,7 +249,7 @@ def show_app():
                     database.COMPUTER: True,
                     database.DATE: True,
                     database.COMPUTATION: True,
-                    "bubble_size": False,
+                    "marker_size": False,
                     "Quantum computer": False,
                 },
                 custom_data=database.REFERENCE,
@@ -269,7 +266,7 @@ def show_app():
                     ]  # TODO: Will index 0 always be the URL?
                     with url_column:
                         st.link_button(
-                            f"Open reference: {url}",
+                            f"Open reference",
                             url,
                             use_container_width=True,
                             type="primary",
