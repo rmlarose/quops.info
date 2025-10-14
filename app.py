@@ -266,7 +266,7 @@ def show_app():
                     ]  # TODO: Will index 0 always be the URL?
                     with url_column:
                         st.link_button(
-                            f"Open reference",
+                            f"Open reference: {url}",
                             url,
                             use_container_width=True,
                             type="primary",
