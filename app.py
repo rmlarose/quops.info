@@ -517,7 +517,7 @@ def show_app():
 
             if st.session_state.get("submission_success"):
                 st.success(
-                    "Datapoint submitted successfully and is now pending admin approval - thank you!"
+                    "Datapoint submitted successfully and is now pending admin approval. Thank you for contributing to QuOps.Info!"
                 )
                 del st.session_state["submission_success"]
 
