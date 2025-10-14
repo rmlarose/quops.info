@@ -124,8 +124,8 @@ def show_app():
             filter={database.STATUS: database.Status.APPROVED}
         )
 
-        # Create two columns: Left column for filtering/selecting criteria in the plot, right column for the plot itself.
-        selection_column, plot_column, url_column = st.columns([2, 5, 1])
+        # Create columns.  TODO: I don't love that the link is showing up on the far right - explore alternatives.
+        selection_column, plot_column, url_column = st.columns([3, 5, 1])
 
         # Filter controls in the first column
         with selection_column:
