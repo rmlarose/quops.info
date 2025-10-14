@@ -2,23 +2,11 @@
 
 import datetime
 
-import numpy as np
 import pandas as pd
 import streamlit as st
 
-from database import get_collection, get_dataframe
-
-
-def is_nan_or_nan_string(val):
-    # Check for actual NaN
-    if isinstance(val, float) and np.isnan(val):
-        return True
-    if isinstance(val, np.float64) and np.isnan(val):
-        return True
-    # Check for string 'nan', 'NaN', etc.
-    if isinstance(val, str) and val.strip().lower() == 'nan':
-        return True
-    return False
+import database
+import utils
 
 
 def show_admin_page():
@@ -40,7 +28,7 @@ def show_admin_page():
         st.rerun()
         
     if st.session_state.admin_page == "Database":
-        df_all = get_dataframe()
+        df_all = database.get_dataframe()
         st.dataframe(df_all)
         df_ids = df_all["_id"].unique()
         id_selected = st.selectbox("Select the id",df_ids)
@@ -72,17 +60,9 @@ def show_admin_page():
 
             # Step 3: Actually delete the record
             if st.session_state.delete_confirmed:
-                collection = get_collection()
+                collection = database.get_collection()
                 collection.find_one_and_delete({"_id": id_selected})  # TODO: Almost certain bug, need to update `id_selected` for MongoDB. Old code is below:
 
-                """
-                client = get_connection()
-                cur = conn.cursor(cursor_factory=RealDictCursor)
-                cur.execute("DELETE FROM quant_data WHERE id = %s", (int(id_selected),))
-                conn.commit()
-                cur.close()
-                conn.close()
-                """
                 st.success(f"✅ Successfully deleted the record with _id {id_selected}.")
 
                 if st.button("🔄 Click to refresh and see updates"):
@@ -106,27 +86,27 @@ def show_admin_page():
 
                 try:
                     num_2q_gates_raw = st.text_input("Number of two-qubit gates", value=record['Number of two-qubit gates'])
-                    new_num_2q_gates = int(num_2q_gates_raw) if num_2q_gates_raw and not is_nan_or_nan_string(num_2q_gates_raw) else None
+                    new_num_2q_gates = int(num_2q_gates_raw) if num_2q_gates_raw and not utils.is_nan_or_nan_string(num_2q_gates_raw) else None
                 except:
                     st.error("Invalid input. Please input a valid number")
                     
 
                 try:
                     num_1q_gates_raw = st.text_input("Number of single-qubit gates", value=record['Number of single-qubit gates'])
-                    new_num_1q_gates = int(num_1q_gates_raw) if num_1q_gates_raw and not is_nan_or_nan_string(num_1q_gates_raw) else None
+                    new_num_1q_gates = int(num_1q_gates_raw) if num_1q_gates_raw and not utils.is_nan_or_nan_string(num_1q_gates_raw) else None
                 except:
                     st.error("Invalid input. Please input a valid number")
                     
 
                 try:
                     total_gates_raw = st.text_input("Total number of gates", value=record['Total number of gates'])
-                    new_total_gates = int(total_gates_raw) if total_gates_raw and not is_nan_or_nan_string(total_gates_raw) else None
+                    new_total_gates = int(total_gates_raw) if total_gates_raw and not utils.is_nan_or_nan_string(total_gates_raw) else None
                 except:
                     st.error("Invalid input. Please input a valid number")
                     
                 try:
                     circuit_depth_raw = st.text_input("Circuit depth", value=record['Circuit depth'])
-                    new_circuit_depth = int(circuit_depth_raw) if circuit_depth_raw and not is_nan_or_nan_string(circuit_depth_raw) else None
+                    new_circuit_depth = int(circuit_depth_raw) if circuit_depth_raw and not utils.is_nan_or_nan_string(circuit_depth_raw) else None
                 except:
                     st.error("Invalid input. Please input a valid number")
                     
@@ -156,7 +136,7 @@ def show_admin_page():
                         error_count_a+=1
                         st.error("Computer is a required field. (Select Unknown if the computer is not named or unknown.)")
                     if error_count_a == 0:
-                        collection = get_collection()
+                        collection = database.get_collection()
                         collection.find_one_and_update(
                             {"_id": id_selected},
                             {
@@ -186,8 +166,13 @@ def show_admin_page():
     if st.session_state.admin_page == "Data Table":
         st.header("📈 Pending Submissions")
         try:
-            collection = get_collection()
-            data = list(collection.find({"status": "pending"}))  # TODO: Query the database directly like this instead of finding all first.
+            collection = database.get_collection()
+            data = list(
+                collection.find(
+                    {"$or": 
+                     [{database.STATUS: database.Status.PENDING},
+                      {database.STATUS: database.Status.UPDATE_REQUESTED}]
+                      }))  # TODO: Query the database directly like this instead of finding all first.
             df_data = pd.DataFrame(data)
 
             if not data:
@@ -204,31 +189,38 @@ def show_admin_page():
                                 st.table(row)
                             else:
                                 st.markdown("Update Datapoint")
-                                if "comments" in row.keys():
-                                    comments = row["comments"]
+                                if database.COMMENTS in row.keys():  # TODO: This should always be true now after data updates.
+                                    comments = row[database.COMMENTS]
                                 else:
                                     comments = ""
-                                st.markdown(f"**Comments:** <span style='color:green'>{comments}</span>", unsafe_allow_html=True)
+                                st.markdown(f"**Justification for changes:** <span style='color:green'>{comments}</span>", unsafe_allow_html=True)
                                 st.table(row)
                             
 
                         with col2:
                             c1, c2 = st.columns(2)
                             if c1.button("✅ Approve", key=f"approve_{row['_id']}"):
-                                collection = get_collection()
+                                collection = database.get_collection()
 
-                                if row['status']=='pending':
+                                if row[database.STATUS]==database.Status.PENDING:
                                     collection.find_one_and_update(
-                                        {"_id": row["_id"]}, {"$set": {"status": "approved"}}
+                                        {"_id": row["_id"]}, {"$set": {database.STATUS: database.Status.APPROVED}}
                                     )
-                                else:
-                                    collection.find_one_and_delete({"_id": row["_id"]})
+                                    st.success(f"Approved ID {row['_id']}")
+                                    st.rerun()
+                                elif row[database.STATUS] == database.Status.UPDATE_REQUESTED:
+                                    # Find and delete the old data.
+                                    collection.find_one_and_delete({database.REFERENCE: row[database.REFERENCE], database.STATUS: database.Status.APPROVED})
 
-                                st.success(f"Approved ID {row['_id']}")
-                                st.rerun()
+                                    # Change the status to approved.
+                                    collection.find_one_and_update(
+                                        {database.REFERENCE: row[database.REFERENCE]}, {"$set": {database.STATUS: database.Status.APPROVED}}
+                                    )
+                                    st.success(f"Approved ID {row['_id']}")
+                                    st.rerun()
 
                             if c2.button("❌ Reject", key=f"reject_{row['_id']}"):
-                                collection = get_collection()
+                                collection = database.get_collection()
                                 collection.find_one_and_delete({"_id": row["_id"]})
                                 st.warning(f"Rejected ID {row['_id']}")
                                 st.rerun()
