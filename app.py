@@ -153,29 +153,39 @@ def show_app():
             years = [d.year for d in all_data[database.DATE]]
             all_data["Year"] = years  # For convenience later.
             years_unique = sorted(set(years))
-            selected_years = st.multiselect(
+            years_selected = st.multiselect(
                 "Year", years_unique, default=years_unique
             )  # TODO: Explore options other than multiselect. Maybe a start, stop, [step]?
 
-            # TODO: Add horizontal axis selection. (Qubits / date).
-            x_options = [
-                database.NUMBER_OF_QUBITS,
-                database.DATE,
-            ]
-            x_axis_selection = st.selectbox("Horizontal axis", x_options, index=0)
+            col5, col6 = st.columns(2)
 
-            # Y-axis selection.
-            y_options = [
-                database.NUMBER_OF_TWO_QUBIT_GATES,
-                database.NUMBER_OF_QUBITS,
-                database.NUMBER_OF_ONE_QUBIT_GATES,
-                database.TOTAL_NUMBER_OF_GATES,
-                database.CIRCUIT_DEPTH,
-            ]
-            y_axis_selection = st.selectbox("Vertical axis", y_options, index=0)
+            with col5:
+                x_options = [
+                    database.NUMBER_OF_QUBITS,
+                    database.DATE,
+                ]
+                x_axis_selection = st.selectbox("Horizontal axis", x_options, index=0)
 
+                xscale_options = ["Linear"] if x_axis_selection == database.DATE else ["Linear", "Log"]
+                x_axis_scale = st.selectbox(
+                    "Horizontal axis scale", xscale_options, index=0
+                )
+            with col6:
+                # Y-axis selection.
+                y_options = [
+                    database.NUMBER_OF_TWO_QUBIT_GATES,
+                    database.NUMBER_OF_QUBITS,
+                    database.NUMBER_OF_ONE_QUBIT_GATES,
+                    database.TOTAL_NUMBER_OF_GATES,
+                    database.CIRCUIT_DEPTH,
+                ]
+                y_axis_selection = st.selectbox("Vertical axis", y_options, index=0)
+                y_axis_scale = st.selectbox(
+                    "Vertical axis scale", ["Linear", "Log"], index=1
+                )
+            
             # Marker size selection.
-            b_options = [
+            marker_size_options = [
                 "Date (more recent = larger)",
                 "Equal size",
                 database.NUMBER_OF_QUBITS,
@@ -184,71 +194,39 @@ def show_app():
                 database.TOTAL_NUMBER_OF_GATES,
                 database.CIRCUIT_DEPTH,
             ]
-            b_axis = st.selectbox("Marker size", b_options, index=0)
+            marker_size_selection = st.selectbox("Marker size", marker_size_options, index=0)
 
-            if b_axis == b_options[0]:
-                dates = [d for d in all_data.Date]
+        with plot_column:
+            # Filter DataFrame for plotting.
+            graph_df = all_data[
+                (all_data["Institution"].isin(institutions_selected))
+                & (all_data["Computer"].isin(computers_selected))
+                & (all_data["Year"].isin(years_selected))
+            ]
+            # graph_df["Date"] = graph_df["Date"].astype(str)
+            graph_df["_id"] = [str(id) for id in graph_df["_id"]]
+            graph_df = graph_df.fillna("")
+
+            if marker_size_selection == marker_size_options[0]:
+                dates = [d for d in graph_df.Date]
                 date_min = min(dates)
                 date_max = max(dates)
-                all_data["bubble_size"] = dates
-                all_data["bubble_size"] = all_data["bubble_size"].apply(
+                graph_df["bubble_size"] = dates
+                graph_df["bubble_size"] = graph_df["bubble_size"].apply(
                     lambda x: (
                         (x - date_min).days / (date_max - date_min).days
                         if pd.notnull(x)
                         else None
                     )
                 )
+                graph_df["bubble_size"] = graph_df["bubble_size"] * 125 + 10
+                marker_size_selection = "bubble_size"
 
-                # Scale to a desired range (e.g., 10–60)
-                all_data["bubble_size"] = (
-                    all_data["bubble_size"] * 50 + 10
-                )  # range from 10 to 60. TODO: Make these parameters.
-                b_axis = "bubble_size"
+            elif marker_size_selection == "Equal size":
+                graph_df["bubble_size"] = 125
+            else:
+                graph_df["bubble_size"] = graph_df[marker_size_selection]
 
-            col5, col6 = st.columns(2)
-
-            with col5:
-                xscale_options = ["Linear"] if x_axis_selection == database.DATE else ["Linear", "Log"]
-                x_axis_scale = st.selectbox(
-                    "Horizontal axis scale", xscale_options, index=0
-                )
-            with col6:
-                y_axis_scale = st.selectbox(
-                    "Vertical axis scale", ["Linear", "Log"], index=1
-                )
-
-        # Filter DataFrame for plotting.
-        data_to_plot = all_data[
-            (all_data["Institution"].isin(institutions_selected))
-            & (all_data["Computer"].isin(computers_selected))
-            & (all_data["Year"].isin(selected_years))
-        ]
-        graph_df = data_to_plot.copy()
-
-        if b_axis != "Equal size":
-            data_to_plot = data_to_plot.dropna(subset=[b_axis])
-            graph_df = data_to_plot.copy()
-            bubble_index = graph_df.columns.get_loc(b_axis)
-            min_value = graph_df.iloc[:, bubble_index].min()
-            max_value = graph_df.iloc[:, bubble_index].max()
-            min_value = 0 if pd.isna(min_value) else min_value
-            max_value = 0 if pd.isna(max_value) else max_value
-
-            bubble_index = int(bubble_index)
-            min_value = float(min_value) if min_value is not None else 0
-            max_value = float(max_value) if max_value is not None else 0
-            b_size = [50, 120]
-        else:
-            graph_df = data_to_plot.copy()
-            bubble_index = graph_df.columns.get_loc("Date")
-            min_value = 50
-            max_value = 50
-            b_size = [50, 50]
-
-        with plot_column:
-            graph_df["Date"] = graph_df["Date"].astype(str)
-            graph_df["_id"] = [str(id) for id in graph_df["_id"]]
-            graph_df = graph_df.fillna("")
 
             graph_df["Quantum computer"] = (
                 graph_df["Institution"] + " " + graph_df["Computer"]
