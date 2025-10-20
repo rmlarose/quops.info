@@ -41,9 +41,9 @@ def show_app():
         [
             "About",
             "Visualization",
-            "Submit New Datapoint",
-            "Update a Datapoint",
-            "Admin Login",
+            "Submit datapoint",
+            "Update datapoint",
+            "Admin login",
         ]
     )
 
@@ -88,19 +88,19 @@ def show_app():
                 </p>
 
                 <p>
-                    On the <button class="goto" style="margin-left: 6px;">visualization page</button>:<br>
-                    1. <strong>Hover</strong> over a point to see its data.<br>
-                    2. <strong>Single-click</strong> a point to update its data.<br>
-                    3. <strong>Double-click</strong> a point to open its reference.
+                    On the<button class="goto" style="margin-left: 6px;">visualization page</button>, hover over a point to see its data and click a point to open its reference.
                 </p>
 
                 <p>
-                    You can also <button class="gotos" style="margin-left: 6px;">submit new datapoints</button>.
+                    Please consider<button class="gotos" style="margin-left: 6px;">submitting a datapoint</button> and/or updating a datapoint!
                 </p>
 
                 <p>
                     All new submissions and updates are reviewed by site administrators.
                 </p>
+
+                <p>
+                    For background information, we recommend <a target="_blank" rel="noopener noreferrer" href="https://arxiv.org/abs/1801.00862">Quantum computing in the NISQ era and beyond</a> and <a target="_blank" rel="noopener noreferrer" href="https://arxiv.org/abs/2502.17368">Beyond NISQ: The Megaquop Machine</a>.
             </div>
                 
                 <script>
