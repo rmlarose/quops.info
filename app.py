@@ -207,7 +207,7 @@ def show_app():
 
             # Columns to show the URL when a point is clicked on the plot.
             # TODO: Not ideal. Explore options for displaying under the plot. Maybe st.container()?
-            ref_column1, ref_column2 = st.columns([0.18, 0.82])
+            ref_column1, ref_column2 = st.columns([0.40, 0.60])
 
         with plot_column:
             # Filter DataFrame for plotting.
@@ -279,7 +279,7 @@ def show_app():
                         0
                     ]  # TODO: Will index 0 always be the URL?
                     with ref_column1:
-                        st.write("Open URL:")
+                        st.write("URL of selected point:")
                     with ref_column2:
                         st.write(f"{url}")
                         # st.link_button()  # TODO: Add "update this point" option. See https://discuss.streamlit.io/t/switch-tabs-programitically/37887/8.
@@ -293,10 +293,6 @@ def show_app():
 
     # The tab for submitting a new datapoint.
     with submit_tab:
-        institutions = list(all_data["Institution"].unique())
-
-        # st.header("Submit Quantum Datapoint")
-
         # CAPTCHA Verification First
         if "controllo" not in st.session_state:
             st.session_state["controllo"] = False
@@ -319,7 +315,7 @@ def show_app():
 
             captcha_input = plot_column.text_area("Enter captcha text", height=30)
 
-            if st.button("Verify"):
+            if st.button("Verify humanity"):
                 if st.session_state["Captcha"].lower() == captcha_input.strip().lower():
                     del st.session_state["Captcha"]
                     st.session_state["controllo"] = True
@@ -329,233 +325,170 @@ def show_app():
                     del st.session_state["Captcha"]
                     st.rerun()
 
-            # st.stop()  # Stop here until CAPTCHA is verified
-
-        # Only show the form if CAPTCHA passed
-
+        # Show the form when the captcha is passed.
         elif st.session_state["controllo"] == True:
-            st.markdown(
-                """
-            <style>
-                /* Hide the default Streamlit label */
-                label[for="reference_input"] {
-                    display: none;
-                }
-                /* Make the custom label green */
-                .green-label {
-                    color: green;
-                    font-weight:bold;
+            REQUIRED_KEY: str = "*"
+            st.markdown(f"({REQUIRED_KEY} = required)")
 
-                }
-                .black-label{
-                    color:black;
-                    
-                }
-            </style>
-        """,
-                unsafe_allow_html=True,
-            )
-
-            st.markdown("Highlighted fields are required.")
-
-            st.markdown(
-                '<div class="green-label">Reference</div>', unsafe_allow_html=True
-            )
-            reference = st.text_input(
-                label="",
-                key="reference_input",
-                help="The reference for the quantum computation, typically an arXiv or journal link",
-            )
-
-            st.markdown(
-                '<div class="black-label">Experiment Date</div>', unsafe_allow_html=True
-            )
-            date = st.date_input(
-                "",
-                value=datetime.today(),
-                help="The date the experiment was performed or published (typically the date of the reference)",
-            )
-            date = datetime(
-                date.year, date.month, date.day
-            )  # Convert from datetime.date to datetime.datetime.
-
-            st.markdown(
-                '<div class="black-label">Computation (comma-separated list)</div>',
-                unsafe_allow_html=True,
-            )
-            computation_raw = st.text_area(
-                "",
-                help="The algorithm used/computation performed, for example Trotter, VQE, Phase estimation",
-            )
-
-            # st.markdown('<div class="black-label">Error Mitigation (comma-separated list)</div>', unsafe_allow_html=True)
-            # error_mitigation_raw = st.text_area("", help="e.g. ZNE, Clifford Data Regression")
-
-            st.markdown(
-                '<div class="green-label">Number of Qubits</div>',
-                unsafe_allow_html=True,
-            )
-            num_qubits_raw = st.text_input(
-                "", help="Number of qubits used in the quantum computation"
-            )
-            num_qubits = (
-                int(num_qubits_raw) if num_qubits_raw.strip().isdigit() else None
-            )
-
-            st.markdown(
-                '<div class="black-label">Number of Two-Qubit Operations</div>',
-                unsafe_allow_html=True,
-            )
-            num_2q_gates_raw = st.text_input(
-                "",
-                help="Number of two-qubit operations used in the quantum computation",
-            )
-            num_2q_gates = (
-                int(num_2q_gates_raw) if num_2q_gates_raw.strip().isdigit() else None
-            )
-
-            st.markdown(
-                '<div class="black-label">Number of Single-Qubit Operations</div>',
-                unsafe_allow_html=True,
-            )
-            num_1q_gates_raw = st.text_input(
-                "",
-                help="Number of siingle-qubit operations used in the quantum computation",
-            )
-            num_1q_gates = (
-                int(num_1q_gates_raw) if num_1q_gates_raw.strip().isdigit() else None
-            )
-
-            st.markdown(
-                '<div class="black-label">Total Number of Operations</div>',
-                unsafe_allow_html=True,
-            )
-            total_gates_raw = st.text_input(
-                "",
-                help="Total number of operations used in the quantum computation, e.g. single-qubit operations + two-qubit operations",
-            )
-            total_gates = (
-                int(total_gates_raw) if total_gates_raw.strip().isdigit() else None
-            )
-
-            st.markdown(
-                '<div class="black-label">Circuit Depth</div>', unsafe_allow_html=True
-            )
-            circuit_depth_raw = st.text_input(
-                "",
-                help="The depth of the circuit in the quantum computation (see Circuit Depth Measure).",
-            )
-            circuit_depth = (
-                int(circuit_depth_raw) if circuit_depth_raw.strip().isdigit() else None
-            )
-
-            st.markdown(
-                '<div class="black-label">Circuit Depth Measure</div>',
-                unsafe_allow_html=True,
-            )
-            cdm_options = list(all_data["Circuit depth measure"].unique())
-            try:
-                selected_cdm = st.selectbox(
-                    "",
-                    options=cdm_options + ["Other"],
-                    index=0,
-                    help="The measure/metric used for circuit depth, for example two-qubit gate layers, Trotter step, etc. Number of two-qubit operations and/or total number of operations is preferred to this metric, and this should be used only when these are unknown.",
-                )
-                if selected_cdm == "Other":
-                    raise TypeError("Type Manually")
-                else:
-                    circuit_depth_measure = selected_cdm
-            except:
-                circuit_depth_measure = st.text_input(
-                    "Enter Circuit depth measure manually:",
-                    help="The measure/metric used for circuit depth, for example two-qubit gate layers, Trotter step, etc. Number of two-qubit operations and/or total number of operations is preferred to this metric, and this should be used only when these are unknown.",
-                )
-
-            st.markdown(
-                '<div class="green-label">Institution</div>', unsafe_allow_html=True
-            )
-            try:
-                selected = st.selectbox(
-                    "",
-                    options=institutions + ["Other"],
-                    index=0,
-                    help="Who owns the quantum computer, e.g. Google, Quantinuum, QuEra",
-                )
-                if selected == "Other":
-                    raise TypeError("Type Manually")
-                else:
-                    institution = selected
-            except:
-                institution = st.text_input(
-                    "Enter Institution manually:",
-                    help="Who owns the quantum computer, e.g. Google, Quantinuum, QuEra",
-                )
-
-            st.markdown(
-                '<div class="green-label">Computer</div>', unsafe_allow_html=True
-            )
-            if selected != "Other":
-                computers = list(
-                    all_data[all_data["Institution"] == institution][
-                        "Computer"
-                    ].unique()
-                )
-                selected_comp = st.selectbox(
-                    "",
-                    options=computers + ["Other"],
-                    index=0,
-                    help="The name or other identifying label for the quantum computer",
-                )
-                try:
-                    if selected_comp == "Other":
-                        raise TypeError("Type Manually")
-                    else:
-                        computer = selected_comp
-                except:
-                    computer = st.text_input(
-                        "Enter Computer manually:",
-                        help="The name or other identifying label for the quantum computer",
+            with st.container(border=True):
+                reference_column, date_column = st.columns([2, 1])
+                with reference_column:
+                    reference = st.text_input(
+                        label=database.REFERENCE + REQUIRED_KEY,
+                        value="",
+                        placeholder="The reference for the quantum computation, typically an arXiv or journal link.",
                     )
-            else:
+                with date_column:
+                    date = st.date_input(
+                        label=database.DATE + REQUIRED_KEY,
+                        value=datetime.today(),
+                        help="The date the experiment was performed or published (typically the date of the reference).",
+                    )
+                    date = datetime(date.year, date.month, date.day)
 
-                computer = st.text_input(
-                    "Enter Computer manually:",
-                    help="The name or other identifying label for the quantum computer",
+            with st.container(border=True):
+                institution_column, computer_column = st.columns([1, 1])
+                with institution_column:
+                    institutions = sorted(all_data[database.INSTITUTION].unique())
+                    try:
+                        selected = st.selectbox(
+                            database.INSTITUTION + REQUIRED_KEY,
+                            options=institutions + ["Other"],
+                            index=None,
+                            placeholder="Who owns the quantum computer, e.g. Google, Quantinuum, or QuEra.",
+                        )
+                        if selected == "Other":
+                            raise TypeError("Type Manually")
+                        else:
+                            institution = selected
+                    except:
+                        institution = st.text_input(
+                            database.INSTITUTION + REQUIRED_KEY,
+                            placeholder="Type new institution",
+                        )
+                
+                with computer_column:
+                    if selected != "Other":
+                        computers = list(
+                            all_data[all_data[database.INSTITUTION] == institution][
+                                database.COMPUTER
+                            ].unique()
+                        )
+                        selected_comp = st.selectbox(
+                            database.COMPUTER + REQUIRED_KEY,
+                            options=computers + ["Other"],
+                            index=None,
+                            placeholder="The name or other identifying label for the quantum computer",
+                        )
+                        try:
+                            if selected_comp == "Other":
+                                raise TypeError("Type Manually")
+                            else:
+                                computer = selected_comp
+                        except:
+                            computer = st.text_input(
+                                database.COMPUTER + REQUIRED_KEY,
+                                help="The name or other identifying label for the quantum computer",
+                            )
+                    else:
+                        computer = st.text_input(
+                            database.COMPUTER + REQUIRED_KEY,
+                            placeholder="Type new computer",
+                        )
+
+            with st.container(border=True):
+                num_qubits = st.number_input(
+                    database.NUMBER_OF_QUBITS + REQUIRED_KEY,
+                    value=None,
+                    placeholder="Number of qubits used in the quantum computation",
+                    step=1,
                 )
+
+            with st.container(border=True):
+                st.text("At least one of the following rows is required" + REQUIRED_KEY)
+
+                num_2q_gates = st.number_input(
+                    label=database.NUMBER_OF_TWO_QUBIT_GATES,
+                    value=None,
+                    placeholder="Number of two-qubit gates used in the quantum computation",
+                    step=1,
+                )
+
+                total_gates = st.number_input(
+                    database.TOTAL_NUMBER_OF_GATES,
+                    value=None,
+                    placeholder="Total number of gates used in the quantum computation",
+                    step=1,
+                )
+
+                circuit_depth_column, circuit_depth_measure_column = st.columns([1, 1])
+                with circuit_depth_column:
+                    circuit_depth = st.number_input(
+                        database.CIRCUIT_DEPTH,
+                        value=None,
+                        placeholder="The depth of the circuit in the quantum computation.",
+                        step=1,
+                    )
+
+                with circuit_depth_measure_column:
+                    cdm_options = list(all_data[database.CIRCUIT_DEPTH_MEASURE].unique())
+                    try:
+                        selected_cdm = st.selectbox(
+                            database.CIRCUIT_DEPTH_MEASURE,
+                            options=cdm_options + ["Other"],
+                            index=None,
+                            placeholder="The measure/metric used for circuit depth, for example two-qubit gate layers, Trotter step, etc.",
+                        )
+                        if selected_cdm == "Other":
+                            raise TypeError("Type Manually")
+                        else:
+                            circuit_depth_measure = selected_cdm
+                    except:
+                        circuit_depth_measure = st.text_input(
+                            database.CIRCUIT_DEPTH_MEASURE,
+                            placeholder="The measure/metric used for circuit depth, for example two-qubit gate layers, Trotter step, etc.",
+                        )
+
+            num_1q_gates = st.number_input(
+                database.NUMBER_OF_ONE_QUBIT_GATES,
+                value=None,
+                placeholder="Number of single-qubit gates used in the quantum computation",
+                step=1,
+            )
+            computation_raw = st.text_input(
+                label=database.COMPUTATION,
+                placeholder="The computation performed, e.g. Trotter. If multiple, use a comma-separated list, e.g. VQE, Phase estimation",
+            )
 
             submit = st.button("Submit")
 
             if st.session_state.get("submission_success"):
                 st.success(
-                    "Datapoint submitted successfully and is now pending admin approval. Thank you for contributing to QuOps.Info!"
+                    "Datapoint submitted successfully and is pending admin approval - thanks for contributing to QuOps.Info!"
                 )
                 del st.session_state["submission_success"]
 
-            error_count_new = 0
+            error_count = 0
             if submit:
                 if not reference:
-                    error_count_new += 1
-                    st.error(
-                        "Please fill out Reference(url or citation) as it is a required field. "
-                    )
+                    error_count += 1
+                    st.error(f"{database.REFERENCE} is required.")
                 if not num_qubits:
-                    error_count_new += 1
-                    st.error(
-                        "Please fill out Number of Qubits as it is a required field. "
-                    )
+                    error_count += 1
+                    st.error(f"{database.NUMBER_OF_QUBITS} is required.")
                 if not institution:
-                    error_count_new += 1
-                    st.error("Please fill out Institution as it is a required field. ")
+                    error_count += 1
+                    st.error(f"{database.INSTITUTION} is required.")
                 if not computer:
-                    error_count_new += 1
-                    st.error("Please fill out Computer as it is a required field. ")
-                if not (num_2q_gates or total_gates):
-                    error_count_new += 1
+                    error_count += 1
+                    st.error(f"{database.COMPUTER} is required.")
+                if not (num_2q_gates or total_gates or (circuit_depth and circuit_depth_measure)):
+                    error_count += 1
                     st.error(
-                        "Please fill either Number of two-Qubit operations or Total Number of Operations"
+                        f"{database.NUMBER_OF_TWO_QUBIT_GATES} OR {database.TOTAL_NUMBER_OF_GATES} OR ({database.CIRCUIT_DEPTH} AND {database.CIRCUIT_DEPTH_MEASURE}) is required."
                     )
 
-                if error_count_new == 0:
+                if error_count == 0:
                     computation_list = [
                         x.strip() for x in computation_raw.split(",") if x.strip()
                     ]
@@ -575,8 +508,7 @@ def show_app():
                     )
 
                     if datapoint_inserted:
-                        st.success("Datapoint submitted successfully!")
-                        # st.session_state['controllo'] = False
+                        st.success("Datapoint submitted successfully and pending admin approval - thanks for contributing to QuOps.Info!")
 
                         st.session_state.submission_success = True
                         st.rerun()
@@ -603,99 +535,69 @@ def show_app():
         )
         record = all_data[all_data[database.REFERENCE] == reference_to_update]
         record = record.iloc[0]
+        print("SELECTED THE FOLLOWING FOR UPDATING")
+        print(record)
 
         new_date = st.date_input("Date", value=record["Date"])
         new_date = datetime(year=new_date.year, month=new_date.month, day=new_date.day)
+
+        new_computation = st.text_input(
+            "Computation", value=",".join(record["Computation"]), help="Short descriptor of the computation performed. If multiple, use a comma-separated list. Example: Trotter, Quantum Krylov"
+        )
+        computation_list = [x.strip() for x in new_computation.split(",") if x.strip()]
+
         new_qubits = st.number_input(
-            "Number of Qubits",
-            value=int(record["Number of qubits"]),
+            database.NUMBER_OF_QUBITS,
+            value=int(record[database.NUMBER_OF_QUBITS]),
             help="Number of qubits used in the quantum computation",
         )
 
-        try:
-            num_2q_gates_raw = st.text_input(
-                "Number of Two-Qubit Gates",
-                value=record["Number of two-qubit gates"],
-                help="Number of two-qubit operations used in the quantum computation",
-            )
-            new_num_2q_gates = (
-                float(num_2q_gates_raw)
-                if num_2q_gates_raw and not utils.is_nan_or_nan_string(num_2q_gates_raw)
-                else None
-            )
-        except:
-            st.error("Invalid input. Please input a valid number")
+        # try:
+        new_num_2q_gates = st.number_input(
+            database.NUMBER_OF_TWO_QUBIT_GATES,
+            value=int(record[database.NUMBER_OF_TWO_QUBIT_GATES]),
+            help="Number of two-qubit gates used in the quantum computation",
+        )
 
-        try:
-            num_1q_gates_raw = st.text_input(
-                database.NUMBER_OF_ONE_QUBIT_GATES,
-                value=record[database.NUMBER_OF_ONE_QUBIT_GATES],
-                help="Number of single-qubit operations used in the quantum computation",
-            )
-            new_num_1q_gates = (
-                int(num_1q_gates_raw)
-                if num_1q_gates_raw and not utils.is_nan_or_nan_string(num_1q_gates_raw)
-                else None
-            )
-        except:
-            st.error("Invalid input. Please input a valid number")
+        new_num_1q_gates = st.number_input(
+            database.NUMBER_OF_ONE_QUBIT_GATES,
+            value=record[database.NUMBER_OF_ONE_QUBIT_GATES],
+            help="Number of single-qubit gates used in the quantum computation",
+        )
 
-        try:
-            total_gates_raw = st.text_input(
-                "Total number of gates",
-                value=record["Total number of gates"],
-                help="Total number of operations used in the quantum computation, e.g. single-qubit operations + two-qubit operations",
-            )
-            new_total_gates = (
-                int(total_gates_raw)
-                if total_gates_raw and not utils.is_nan_or_nan_string(total_gates_raw)
-                else None
-            )
-        except:
-            st.error("Invalid input. Please input a valid number")
+        new_total_gates = st.number_input(
+            database.TOTAL_NUMBER_OF_GATES,
+            value=record[database.TOTAL_NUMBER_OF_GATES],
+            help="Total number of gates used in the quantum computation, e.g. single-qubit operations + two-qubit operations",
+        )
 
-        try:
-            circuit_depth_raw = st.text_input(
-                "Circuit depth",
-                value=record["Circuit depth"],
-                help="The depth of the circuit in the quantum computation (see Circuit Depth Measure).",
-            )
-            new_circuit_depth = (
-                int(circuit_depth_raw)
-                if circuit_depth_raw
-                and not utils.is_nan_or_nan_string(circuit_depth_raw)
-                else None
-            )
-        except:
-            st.error("Invalid input. Please input a valid number")
+        new_circuit_depth = st.number_input(
+            database.CIRCUIT_DEPTH,
+            value=record[database.CIRCUIT_DEPTH],
+            help="The depth of the circuit in the quantum computation (cf. Circuit depth measure).",
+        )
 
         new_circuit_depth_measure = st.text_input(
-            "Circuit depth measure",
-            value=record["Circuit depth measure"],
-            help="The measure/metric used for circuit depth, for example two-qubit gate layers, Trotter step, etc. Number of two-qubit operations and/or total number of operations is preferred to this metric, and this should be used only when these are unknown. ",
+            database.CIRCUIT_DEPTH_MEASURE,
+            value=record[database.CIRCUIT_DEPTH_MEASURE],
+            help="The measure/metric used for circuit depth, for example two-qubit gate layers, Trotter step, etc. Number of two-qubit operations and/or total number of operations is preferred to this metric, and this should be used only when these are unknown.",
         )
         new_institution = st.text_input(
-            "Institution",
-            value=record["Institution"],
+            database.INSTITUTION,
+            value=record[database.INSTITUTION],
             help="Who owns the quantum computer, e.g. Google, Quantinuum, QuEra",
         )
-        new_computation = st.text_input(
-            "Computation", value=record["Computation"], help="e.g. QFT, Measurement"
-        )
         new_computer = st.text_input(
-            "Computer",
-            value=record["Computer"],
-            help="The name or other identifying label for the quantum computer",
+            database.COMPUTER,
+            value=record[database.COMPUTER],
+            help="The name or other identifying label for the quantum computer.",
         )
-        # new_mitigation = st.text_input("Error Mitigations", value=record['Error mitigations'], help="e.g. ZNE, Clifford Data Regression")
+
         comments = st.text_input(
             "Justification for changes",
             value=record.get("feedback"),
             help="Clear description of the changes made with justification. For example: 'Changed the number of two-qubit operations from 512 to 1024. The correct number (1024 two-qubit operations) is stated in the caption of Figure 1 of the reference.'",
         )
-
-        computation_list = [x.strip() for x in new_computation.split(",") if x.strip()]
-        # error_mitigation_list = [x.strip() for x in new_mitigation.split(",") if x.strip()]
 
         # --- CAPTCHA ---
         col3, col4 = st.columns(2)
