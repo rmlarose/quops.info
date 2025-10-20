@@ -1,6 +1,6 @@
 """The QuOps.Info website."""
 
-from datetime import datetime
+from datetime import datetime, timedelta
 import random
 import string
 
@@ -149,13 +149,16 @@ def show_app():
                 default=filtered_computer_options,
             )
 
-            # Year filter.
-            years = [d.year for d in all_data[database.DATE]]
-            all_data["Year"] = years  # For convenience later.
-            min_year_selected, max_year_selected = st.slider(
-                "Time interval", min_value=min(years), max_value=max(years), value=(min(years), max(years)), step=1,
-            )  # TODO: Allow for "continuous" (month/week/day intervals) using datetime.timedelta for step.
-            years_selected = list(range(min_year_selected, max_year_selected + 1))
+            # Dates filter.
+            min_date = min(all_data[database.DATE]).to_pydatetime()
+            max_date = max(all_data[database.DATE]).to_pydatetime()
+            min_date_selected, max_date_selected = st.slider(
+                "Dates",
+                min_value=min_date,
+                max_value=max_date,
+                value=(min_date, max_date),
+                step=timedelta(days=1),
+            )
 
             col5, col6 = st.columns(2)
 
@@ -199,9 +202,10 @@ def show_app():
         with plot_column:
             # Filter DataFrame for plotting.
             graph_df = all_data[
-                (all_data["Institution"].isin(institutions_selected))
-                & (all_data["Computer"].isin(computers_selected))
-                & (all_data["Year"].isin(years_selected))
+                (all_data[database.INSTITUTION].isin(institutions_selected))
+                & (all_data[database.COMPUTER].isin(computers_selected))
+                & (all_data[database.DATE] >= min_date_selected)
+                & (all_data[database.DATE] <= max_date_selected)
             ]
             # graph_df = graph_df.fillna("")
 
