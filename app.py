@@ -124,8 +124,8 @@ def show_app():
             filter={database.STATUS: database.Status.APPROVED}
         )
 
-        # Create columns.  TODO: I don't love that the link is showing up on the far right - explore alternatives.
-        selection_column, plot_column, url_column = st.columns([3, 5, 1])
+        # Selection/filters on the left, plot on the right.
+        selection_column, plot_column = st.columns([2, 5])
 
         # Filter controls in the first column
         with selection_column:
@@ -169,7 +169,11 @@ def show_app():
                 ]
                 x_axis_selection = st.selectbox("Horizontal axis", x_options, index=0)
 
-                xscale_options = ["Linear"] if x_axis_selection == database.DATE else ["Linear", "Log"]
+                xscale_options = (
+                    ["Linear"]
+                    if x_axis_selection == database.DATE
+                    else ["Linear", "Log"]
+                )
                 x_axis_scale = st.selectbox(
                     "Horizontal axis scale", xscale_options, index=0
                 )
@@ -186,7 +190,7 @@ def show_app():
                 y_axis_scale = st.selectbox(
                     "Vertical axis scale", ["Linear", "Log"], index=1
                 )
-            
+
             # Marker size selection.
             marker_size_options = [
                 "Date (more recent = larger)",
@@ -197,7 +201,13 @@ def show_app():
                 database.TOTAL_NUMBER_OF_GATES,
                 database.CIRCUIT_DEPTH,
             ]
-            marker_size_selection = st.selectbox("Marker size", marker_size_options, index=0)
+            marker_size_selection = st.selectbox(
+                "Marker size", marker_size_options, index=0
+            )
+
+            # Columns to show the URL when a point is clicked on the plot.
+            # TODO: Not ideal. Explore options for displaying under the plot. Maybe st.container()?
+            ref_column1, ref_column2 = st.columns([0.18, 0.82])
 
         with plot_column:
             # Filter DataFrame for plotting.
@@ -228,7 +238,6 @@ def show_app():
             else:
                 graph_df["marker_size"] = graph_df[marker_size_selection]
 
-
             graph_df["Quantum computer"] = (
                 graph_df["Institution"] + " " + graph_df["Computer"]
             )
@@ -237,7 +246,7 @@ def show_app():
                 "IBM": "#006699",
                 "Google": "#DB4437",
                 "Quantinuum": "#30a08e",
-            }  # TODO: Use custom colors for plotting based on institution colors.
+            }  # TODO: Use custom colors for plotting based on institu tion colors.
 
             fig = px.scatter(
                 data_frame=graph_df,
@@ -257,6 +266,7 @@ def show_app():
                     "Quantum computer": False,
                 },
                 custom_data=database.REFERENCE,
+                height=625,
             )
 
             def handle_selection():
@@ -268,14 +278,10 @@ def show_app():
                     url = selected_point["customdata"][
                         0
                     ]  # TODO: Will index 0 always be the URL?
-                    with url_column:
-                        st.link_button(
-                            f"Open reference: {url}",
-                            url,
-                            use_container_width=True,
-                            type="primary",
-                            icon="🔎",
-                        )
+                    with ref_column1:
+                        st.write("Open URL:")
+                    with ref_column2:
+                        st.write(f"{url}")
                         # st.link_button()  # TODO: Add "update this point" option. See https://discuss.streamlit.io/t/switch-tabs-programitically/37887/8.
                     # st.write(f"Selected point: {selected_point}")
                 # else:
