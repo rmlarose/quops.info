@@ -152,10 +152,10 @@ def show_app():
             # Year filter.
             years = [d.year for d in all_data[database.DATE]]
             all_data["Year"] = years  # For convenience later.
-            years_unique = sorted(set(years))
-            years_selected = st.multiselect(
-                "Year", years_unique, default=years_unique
-            )  # TODO: Explore options other than multiselect. Maybe a start, stop, [step]?
+            min_year_selected, max_year_selected = st.slider(
+                "Time interval", min_value=min(years), max_value=max(years), value=(min(years), max(years)), step=1,
+            )  # TODO: Allow for "continuous" (month/week/day intervals) using datetime.timedelta for step.
+            years_selected = list(range(min_year_selected, max_year_selected + 1))
 
             col5, col6 = st.columns(2)
 
