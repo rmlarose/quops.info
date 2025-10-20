@@ -3,7 +3,7 @@ name: Backup
 on:
   schedule:
     - cron: 32 4 * * *
-  on: workflow_dispatch
+  workflow_dispatch
 
 jobs:
   mongodump:
